@@ -1,26 +1,170 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-heading: 'Inter', system-ui, -apple-system, sans-serif;
+  
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
+  
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.5rem;
+  --radius-3xl: 2rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+:root {
+  /* User defined Light Mode Palettes */
+  --matrix-primary: #2D8FE2;
+  --matrix-secondary: #88BAE8;
+  --matrix-accent: #17489D;
+  --matrix-bg: #E5F1FA;
+  --matrix-surface: #FFFFFF;
+  --matrix-card-bg: #FFFFFF;
+  --matrix-muted-bg: #F4F9FD;
+  --matrix-border: rgba(45, 143, 226, 0.15);
+  --matrix-text-primary: #16345A;
+  --matrix-text-secondary: #4B6483;
+  
+  /* Additional */
+  --matrix-teal: #64CDC8;
+  --matrix-purple: #39224F;
+
+  /* Shadcn Map */
+  --background: var(--matrix-bg);
+  --foreground: var(--matrix-text-primary);
+  --card: var(--matrix-card-bg);
+  --card-foreground: var(--matrix-text-primary);
+  --popover: var(--matrix-surface);
+  --popover-foreground: var(--matrix-text-primary);
+  --primary: var(--matrix-primary);
+  --primary-foreground: #ffffff;
+  --secondary: var(--matrix-secondary);
+  --secondary-foreground: var(--matrix-accent);
+  --muted: var(--matrix-muted-bg);
+  --muted-foreground: var(--matrix-text-secondary);
+  --accent: var(--matrix-accent);
+  --accent-foreground: #ffffff;
+  --destructive: #ef4444;
+  --border: var(--matrix-border);
+  --input: var(--matrix-border);
+  --ring: var(--matrix-primary);
+  
+  --radius: 1rem;
+}
+
+.dark {
+  /* User defined Dark Mode Palettes */
+  --matrix-primary: #FFCC00;
+  --matrix-secondary: #471396;
+  --matrix-accent: #B13BFF;
+  --matrix-bg: #090040;
+  --matrix-surface: #471396;
+  --matrix-card-bg: rgba(71, 19, 150, 0.4);
+  --matrix-muted-bg: rgba(9, 0, 64, 0.5);
+  --matrix-border: rgba(177, 59, 255, 0.25);
+  --matrix-text-primary: #FFFFFF;
+  --matrix-text-secondary: #D4C3F0;
+
+  /* Additional */
+  --matrix-teal: #B13BFF;
+  --matrix-purple: #471396;
+
+  /* Shadcn Map */
+  --background: var(--matrix-bg);
+  --foreground: var(--matrix-text-primary);
+  --card: var(--matrix-card-bg);
+  --card-foreground: var(--matrix-text-primary);
+  --popover: var(--matrix-surface);
+  --popover-foreground: var(--matrix-text-primary);
+  --primary: var(--matrix-primary);
+  --primary-foreground: var(--matrix-bg);
+  --secondary: var(--matrix-secondary);
+  --secondary-foreground: var(--matrix-text-primary);
+  --muted: var(--matrix-muted-bg);
+  --muted-foreground: var(--matrix-text-secondary);
+  --accent: var(--matrix-accent);
+  --accent-foreground: var(--matrix-text-primary);
+  --destructive: #ef4444;
+  --border: var(--matrix-border);
+  --input: var(--matrix-border);
+  --ring: var(--matrix-accent);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+    -webkit-font-smoothing: antialiased;
+    background-attachment: fixed;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Custom Gradients */
+.bg-gradient-primary {
+  background: linear-gradient(135deg, var(--matrix-primary) 0%, var(--matrix-accent) 100%);
+}
+
+.dark .bg-gradient-primary {
+  background: var(--matrix-primary);
+}
+
+.bg-gradient-page {
+  background: linear-gradient(180deg, var(--matrix-bg) 0%, var(--matrix-secondary) 100%);
+}
+
+.dark .bg-gradient-page {
+  background: radial-gradient(circle at top, rgba(71, 19, 150, 0.3) 0%, var(--matrix-bg) 60%);
+}
+
+/* Glassmorphism */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--matrix-border);
+}
+
+.dark .glass {
+  background: rgba(43, 33, 64, 0.7);
+}
+
+/* Soft Shadows */
+.shadow-soft {
+  box-shadow: 0 4px 20px rgba(45, 143, 226, 0.08);
+}
+.shadow-floating {
+  box-shadow: 0 8px 30px rgba(45, 143, 226, 0.12);
+}
+
+.dark .shadow-soft {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+.dark .shadow-floating {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
 }
