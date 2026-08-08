@@ -35,7 +35,7 @@ const Navbar = () => {
   const shouldReduceMotion = useReducedMotion();
   const navVariants = {
     hidden: { opacity: 0, y: shouldReduceMotion ? 0 : -20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
+    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" as const } }
   };
 
   return (
@@ -143,7 +143,7 @@ const Hero = () => {
 
   const itemVariants = {
     hidden: { opacity: 0, y: shouldReduceMotion ? 0 : 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] } }
+    visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] as const } }
   };
 
   return (
@@ -210,7 +210,7 @@ const Features = () => {
 
   const cardVariants = {
     hidden: { opacity: 0, y: shouldReduceMotion ? 0 : 30 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
+    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" as const } }
   };
 
   return (
@@ -242,7 +242,7 @@ const Features = () => {
               whileHover={{ 
                 y: shouldReduceMotion ? 0 : -4,
                 scale: shouldReduceMotion ? 1 : 1.01,
-                transition: { duration: 0.2, ease: "easeOut" }
+                transition: { duration: 0.2, ease: "easeOut" as const }
               }}
               className="group p-8 rounded-2xl bg-card border border-border hover:border-accent/30 hover:shadow-lg hover:shadow-accent/5 transition-all relative overflow-hidden"
             >
@@ -294,8 +294,8 @@ const Workflow = () => {
           <motion.div 
             initial={{ height: 0, width: 0 }}
             whileInView={shouldReduceMotion ? { height: "100%", width: "100%" } : {
-              height: window.innerWidth < 768 ? "100%" : "2px",
-              width: window.innerWidth < 768 ? "2px" : "100%"
+              height: typeof window !== "undefined" && window.innerWidth < 768 ? "100%" : "2px",
+              width: typeof window !== "undefined" && window.innerWidth < 768 ? "2px" : "100%"
             }}
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 1.5, ease: "easeInOut" }}

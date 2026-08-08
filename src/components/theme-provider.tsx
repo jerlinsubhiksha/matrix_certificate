@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
-import { type ThemeProviderProps } from "next-themes/dist/types";
+import { ThemeProviderProps } from "next-themes";
 
 // Filter out the React 19 script tag warning for next-themes in dev mode
 if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {

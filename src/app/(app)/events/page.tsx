@@ -16,14 +16,7 @@ import {
   ChevronDown
 } from "lucide-react";
 
-const MOCK_EVENTS = [
-  { id: 1, name: "Global Tech Summit 2026", date: "Aug 15, 2026", participants: 1250, certs: 1250, emailStatus: "Completed", creator: "Alice Chen" },
-  { id: 2, name: "AI Engineering Bootcamp", date: "Aug 10, 2026", participants: 420, certs: 420, emailStatus: "Completed", creator: "Marcus Johnson" },
-  { id: 3, name: "Design Leadership Workshop", date: "Aug 02, 2026", participants: 85, certs: 85, emailStatus: "Completed", creator: "Sarah Miller" },
-  { id: 4, name: "Frontend Masters Q3", date: "Jul 28, 2026", participants: 300, certs: 0, emailStatus: "Pending", creator: "Alice Chen" },
-  { id: 5, name: "Cybersecurity Basics", date: "Jul 15, 2026", participants: 150, certs: 150, emailStatus: "Failed (3)", creator: "David Kim" },
-  { id: 6, name: "Product Strategy 101", date: "Jul 05, 2026", participants: 200, certs: 200, emailStatus: "Completed", creator: "Elena Rodriguez" },
-];
+const MOCK_EVENTS: any[] = [];
 
 export default function EventsPage() {
   const [view, setView] = useState<'grid' | 'list'>('grid');
@@ -83,7 +76,21 @@ export default function EventsPage() {
       </div>
 
       {/* Content */}
-      {view === 'grid' ? (
+      {MOCK_EVENTS.length === 0 ? (
+        <div className="bg-card border border-border/60 rounded-xl flex flex-col items-center justify-center py-32 text-center shadow-sm">
+          <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-6">
+            <CalendarDays className="w-8 h-8 text-muted-foreground/50" />
+          </div>
+          <h2 className="text-xl font-bold mb-2">No events found</h2>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto mb-8">
+            You haven't created any certification events yet. Create your first event to start generating and distributing certificates.
+          </p>
+          <button className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground font-semibold rounded-xl hover:opacity-90 transition-opacity">
+            <Plus className="w-5 h-5" />
+            Create Event
+          </button>
+        </div>
+      ) : view === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {MOCK_EVENTS.map(event => (
             <div key={event.id} className="bg-card border border-border/60 rounded-xl overflow-hidden hover:border-accent/40 hover:shadow-lg hover:shadow-accent/5 transition-all group flex flex-col">
