@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { 
   LayoutDashboard, 
   Calendar, 
@@ -25,16 +25,19 @@ import {
 } from "lucide-react";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useAuth } from "@/context/AuthContext";
+import { Loader2 } from "lucide-react";
 
+// Add a requiredRole property
 const SIDEBAR_NAV = [
   { title: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
   { title: "Events", icon: Calendar, href: "/events" },
-  { title: "Coordinators", icon: UsersRound, href: "/coordinators" },
+  { title: "Coordinators", icon: UsersRound, href: "/coordinators", requiredRole: "admin" },
   { title: "Participants", icon: Users, href: "/participants" },
   { title: "Certificates", icon: FileCheck, href: "/certificates" },
   { title: "Email Queue", icon: Mail, href: "/email-queue" },
   { title: "Analytics", icon: BarChart, href: "/analytics" },
-  { title: "Logs", icon: Database, href: "/logs" },
+  { title: "Logs", icon: Database, href: "/logs", requiredRole: "admin" },
   { title: "Settings", icon: Settings, href: "/settings" },
   { title: "Profile", icon: User, href: "/profile" },
 ];
@@ -43,9 +46,29 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
+  const { currentUser, role, loading, logout, userProfile } = useAuth();
+
+  // Redirect if not logged in
+  React.useEffect(() => {
+    if (!loading && !currentUser) {
+      router.push("/login");
+    }
+  }, [currentUser, loading, router]);
 
   // Generate breadcrumb from pathname
   const pathSegments = pathname.split('/').filter(Boolean);
+
+  if (loading || !currentUser) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground animate-pulse">Loading workspace...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
@@ -96,7 +119,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
           {/* Navigation */}
           <nav className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-1.5 custom-scrollbar">
-            {SIDEBAR_NAV.map((item, idx) => {
+            {SIDEBAR_NAV.filter(item => !item.requiredRole || item.requiredRole === role).map((item, idx) => {
               const isActive = pathname.startsWith(item.href);
               return (
                 <Link 
@@ -129,9 +152,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
           {/* Logout */}
           <div className="p-3 border-t border-border/40 shrink-0">
-            <Link 
-              href="/login"
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-all group
+            <button 
+              onClick={() => logout()}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-all group
                 ${collapsed && !mobileOpen ? 'justify-center px-0' : ''}
               `}
               title={collapsed ? "Logout" : undefined}
@@ -140,7 +163,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               {(!collapsed || mobileOpen) && (
                 <span className="text-sm font-semibold whitespace-nowrap">Logout</span>
               )}
-            </Link>
+            </button>
           </div>
         </aside>
 
@@ -214,7 +237,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                    {/* <img src="/avatar.jpg" className="absolute inset-0 w-full h-full object-cover" /> */}
                 </div>
                 <div className="hidden lg:flex flex-col">
-                  <span className="text-sm font-semibold leading-none">Admin</span>
+                  <span className="text-sm font-semibold leading-none">{userProfile?.name || 'User'}</span>
+                  <span className="text-[10px] text-muted-foreground uppercase">{role || 'Loading...'}</span>
                 </div>
               </Link>
             </div>
