@@ -81,8 +81,8 @@
   --matrix-primary: #FFCC00;
   --matrix-secondary: #471396;
   --matrix-accent: #B13BFF;
-  --matrix-bg: #090040;
-  --matrix-surface: #471396;
+  --matrix-bg: #030014;
+  --matrix-surface: #10052b;
   --matrix-card-bg: rgba(71, 19, 150, 0.4);
   --matrix-muted-bg: rgba(9, 0, 64, 0.5);
   --matrix-border: rgba(177, 59, 255, 0.25);
@@ -119,10 +119,17 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply bg-background text-foreground font-sans font-medium;
     -webkit-font-smoothing: antialiased;
     background-attachment: fixed;
   }
+}
+
+.dark body {
+  background-image: 
+    linear-gradient(to right, rgba(236, 72, 153, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(236, 72, 153, 0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
 }
 
 /* Custom Gradients */
@@ -167,4 +174,36 @@
 }
 .dark .shadow-floating {
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* Smoke Animations */
+@keyframes smoke-drift {
+  0% { transform: translate(0, 0) scale(1) rotate(0deg); opacity: 0.3; }
+  33% { transform: translate(3%, -3%) scale(1.1) rotate(5deg); opacity: 0.5; }
+  66% { transform: translate(-2%, 2%) scale(0.9) rotate(-3deg); opacity: 0.4; }
+  100% { transform: translate(0, 0) scale(1) rotate(0deg); opacity: 0.3; }
+}
+
+@keyframes smoke-drift-reverse {
+  0% { transform: translate(0, 0) scale(1.1) rotate(0deg); opacity: 0.4; }
+  50% { transform: translate(-4%, -2%) scale(0.95) rotate(-5deg); opacity: 0.6; }
+  100% { transform: translate(0, 0) scale(1.1) rotate(0deg); opacity: 0.4; }
+}
+
+@keyframes shimmer-pulse {
+  0% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
+  100% { opacity: 0.4; transform: scale(1); }
+}
+
+.animate-smoke-1 {
+  animation: smoke-drift 30s ease-in-out infinite;
+}
+
+.animate-smoke-2 {
+  animation: smoke-drift-reverse 45s ease-in-out infinite;
+}
+
+.animate-smoke-3 {
+  animation: smoke-drift 40s ease-in-out infinite reverse;
 }
