@@ -1,32 +1,31 @@
-import "server-only";
-import * as admin from "firebase-admin";
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+import { getFirestore } from 'firebase-admin/firestore';
 
-const initializeFirebaseAdmin = () => {
-  if (admin.apps.length > 0) {
-    return admin.app();
+if (!getApps().length) {
+  try {
+    const projectId = process.env.FIREBASE_PROJECT_ID || "your-firebase-project-id";
+    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL || "your-firebase-service-account-email";
+    const privateKey = (process.env.FIREBASE_PRIVATE_KEY || "").replace(/\\n/g, '\n');
+    
+    // Only initialize if we have actual credentials, otherwise mock it for dev
+    if (projectId && clientEmail && privateKey && !privateKey.includes("your-firebase")) {
+      initializeApp({
+        credential: cert({
+          projectId,
+          clientEmail,
+          privateKey,
+        }),
+      });
+    } else {
+      console.warn("Firebase Admin credentials missing or using placeholders. Firestore features will crash if called.");
+      // Initialize an empty app just to prevent 'length of undefined' crashes, but calls will fail
+      initializeApp({ projectId: 'mock-project' });
+    }
+  } catch (error) {
+    console.error("Firebase admin initialization error", error);
   }
+}
 
-  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
-  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  // Handle newlines in the private key properly
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n");
-
-  if (!projectId || !clientEmail || !privateKey) {
-    console.warn("Firebase Admin credentials missing. Admin SDK not initialized.");
-    // In production, we might want to throw an error here. 
-    // For development, we return null or throw depending on strictness.
-    throw new Error("Missing Firebase Admin credentials in environment variables.");
-  }
-
-  return admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId,
-      clientEmail,
-      privateKey,
-    }),
-  });
-};
-
-export const adminApp = initializeFirebaseAdmin();
-export const adminAuth = admin.auth(adminApp);
-export const adminDb = admin.firestore(adminApp);
+export const adminAuth = getApps().length ? getAuth() : null as any;
+export const adminDb = getApps().length ? getFirestore() : null as any;

@@ -18,7 +18,11 @@ import {
   Palette,
   Move,
   Loader2,
-  Check
+  Check,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  AlignJustify
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import Link from "next/link";
@@ -33,7 +37,7 @@ const FONT_OPTIONS = [
 ];
 
 export default function CertificatesPipelinePage() {
-  const { events, addEmailJob, incrementCertificates, incrementEmails } = useStore();
+  const { events, addEmailJob, incrementCertificates, incrementEmails, addParticipant } = useStore();
   const [step, setStep] = useState(1);
   const [selectedEventId, setSelectedEventId] = useState("");
   
@@ -56,6 +60,15 @@ export default function CertificatesPipelinePage() {
     descText: 'For successfully completing the program.',
     descColor: '#334155',
     descSize: 20,
+    descAlign: 'center',
+    dateFont: "'Montserrat', sans-serif",
+    dateText: 'August 14, 2026',
+    dateColor: '#334155',
+    dateSize: 16,
+    eventFont: "'Montserrat', sans-serif",
+    eventText: 'Annual Tech Symposium',
+    eventColor: '#334155',
+    eventSize: 24,
   });
 
   const [mounted, setMounted] = useState(false);
@@ -151,20 +164,55 @@ export default function CertificatesPipelinePage() {
         const canvas = await html2canvas(node, { scale: 2, useCORS: true, backgroundColor: null });
         const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
         
-        // 3. Simulate email dispatch
+        // 3. Send email dispatch via real Gmail backend
         setLiveJobs(jobs => jobs.map((j, idx) => idx === i ? { ...j, status: 'Sending' } : j));
-        await new Promise(r => setTimeout(r, 800)); // Network delay simulation
         
-        // 4. Save to global email queue
+        let sendStatus: 'Completed' | 'Failed' = 'Failed';
+        try {
+          const emailRes = await fetch('/api/certificates/send-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: p.name,
+              email: p.email,
+              imageDataUrl: dataUrl,
+              subject: selectedEvent?.emailSubject,
+              customBody: selectedEvent?.emailBody
+            })
+          });
+
+          if (emailRes.ok) {
+            sendStatus = 'Completed';
+            setLiveJobs(jobs => jobs.map((j, idx) => idx === i ? { ...j, status: 'Completed' } : j));
+          } else {
+            setLiveJobs(jobs => jobs.map((j, idx) => idx === i ? { ...j, status: 'Failed' } : j));
+          }
+        } catch (error) {
+          console.error("Email dispatch failed", error);
+          setLiveJobs(jobs => jobs.map((j, idx) => idx === i ? { ...j, status: 'Failed' } : j));
+        }
+
+        // 4. Save to global email queue state (frontend only)
         addEmailJob({
           eventId: selectedEventId,
           participantName: p.name,
           participantEmail: p.email,
-          status: 'Completed',
+          status: sendStatus,
           timestamp: new Date().toISOString()
         });
 
-        setLiveJobs(jobs => jobs.map((j, idx) => idx === i ? { ...j, status: 'Completed' } : j));
+        // 5. Automatically save to global participants database
+        if (selectedEvent) {
+          addParticipant({
+            name: p.name,
+            email: p.email,
+            event: selectedEvent.name,
+            status: sendStatus === 'Completed' ? 'Verified' : 'Failed',
+            date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+          } as any);
+        }
+
+        setLiveJobs(jobs => jobs.map((j, idx) => idx === i ? { ...j, status: sendStatus } : j));
       }
       
       setProgress(Math.round(((i + 1) / participants.length) * 100));
@@ -226,7 +274,7 @@ export default function CertificatesPipelinePage() {
                       templateImage ? 'border-accent/50 bg-accent/5' : 'border-border/60 hover:bg-muted/30 hover:border-foreground/30'
                     }`}
                   >
-                    <input type="file" ref={templateInputRef} onChange={handleTemplateUpload} className="hidden" />
+                    <input type="file" accept="image/png, image/jpeg, image/jpg" ref={templateInputRef} onChange={handleTemplateUpload} className="hidden" />
                     {templateImage ? (
                       <>
                         <CheckCircle2 className="w-8 h-8 text-accent mb-3" />
@@ -237,7 +285,7 @@ export default function CertificatesPipelinePage() {
                       <>
                         <ImageIcon className="w-8 h-8 text-muted-foreground mb-3" />
                         <p className="font-semibold text-foreground">Upload Template Image</p>
-                        <p className="text-xs text-muted-foreground mt-1">Any file format supported</p>
+                        <p className="text-xs text-muted-foreground mt-1">PNG or JPG format supported</p>
                       </>
                     )}
                   </div>
@@ -395,7 +443,7 @@ export default function CertificatesPipelinePage() {
                     <motion.div 
                       drag={step === 2}
                       dragMomentum={false}
-                      className={`absolute pointer-events-auto p-2 border rounded-lg transition-colors group text-center
+                      className={`absolute pointer-events-auto p-2 border rounded-lg transition-colors group ${design.descAlign === 'left' ? 'text-left' : design.descAlign === 'right' ? 'text-right' : design.descAlign === 'justify' ? 'text-justify' : 'text-center'}
                         ${step === 2 ? 'cursor-move border-transparent hover:border-accent/50 hover:bg-accent/5' : 'border-transparent'}
                       `}
                       style={{ top: '60%', left: '50%', x: '-50%', y: '-50%' }}
@@ -407,6 +455,42 @@ export default function CertificatesPipelinePage() {
                         {design.descText}
                       </p>
                       {step === 2 && <div className="absolute -top-3 -right-3 bg-accent text-white text-[9px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">Description</div>}
+                    </motion.div>
+
+                    {/* Event Overlay */}
+                    <motion.div 
+                      drag={step === 2}
+                      dragMomentum={false}
+                      className={`absolute pointer-events-auto p-2 border rounded-lg transition-colors group text-center
+                        ${step === 2 ? 'cursor-move border-transparent hover:border-accent/50 hover:bg-accent/5' : 'border-transparent'}
+                      `}
+                      style={{ top: '48%', left: '50%', x: '-50%', y: '-50%' }}
+                    >
+                      <h3 
+                        className="whitespace-nowrap leading-none font-semibold" 
+                        style={{ fontFamily: design.eventFont, color: design.eventColor, fontSize: `${design.eventSize}px` }}
+                      >
+                        {design.eventText}
+                      </h3>
+                      {step === 2 && <div className="absolute -top-3 -right-3 bg-accent text-white text-[9px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">Event Name</div>}
+                    </motion.div>
+
+                    {/* Date Overlay */}
+                    <motion.div 
+                      drag={step === 2}
+                      dragMomentum={false}
+                      className={`absolute pointer-events-auto p-2 border rounded-lg transition-colors group text-center
+                        ${step === 2 ? 'cursor-move border-transparent hover:border-accent/50 hover:bg-accent/5' : 'border-transparent'}
+                      `}
+                      style={{ top: '80%', left: '30%', x: '-50%', y: '-50%' }}
+                    >
+                      <p 
+                        className="whitespace-nowrap leading-none font-medium" 
+                        style={{ fontFamily: design.dateFont, color: design.dateColor, fontSize: `${design.dateSize}px` }}
+                      >
+                        {design.dateText}
+                      </p>
+                      {step === 2 && <div className="absolute -top-3 -right-3 bg-accent text-white text-[9px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">Date</div>}
                     </motion.div>
 
                   </div>
@@ -421,18 +505,48 @@ export default function CertificatesPipelinePage() {
               {step === 2 ? (
                 /* Step 2: Editor Tools */
                 <>
-                  <div className="bg-card/40 backdrop-blur-xl border border-border/40 rounded-3xl p-6 shadow-sm flex-1">
+                  <div className="bg-card/40 backdrop-blur-xl border border-border/40 rounded-3xl p-6 shadow-sm flex-1 max-h-[800px] overflow-y-auto custom-scrollbar">
                     <h4 className="font-bold mb-6 flex items-center gap-2 border-b border-border/40 pb-3"><Settings className="w-4 h-4 text-accent" /> Editor Tools</h4>
                     
-                    {/* Description Text Input */}
+                    {/* Texts Input */}
                     <div className="space-y-4 mb-6">
-                      <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5"><Type className="w-3.5 h-3.5" /> Description Text</label>
-                      <textarea 
-                        value={design.descText}
-                        onChange={(e) => setDesign({...design, descText: e.target.value})}
-                        rows={3}
-                        className="w-full px-3 py-2 bg-muted/50 border border-border/60 rounded-xl focus:border-accent focus:outline-none transition-colors text-sm resize-none"
-                      />
+                      <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5"><Type className="w-3.5 h-3.5" /> Certificate Texts</label>
+                      
+                      <div className="space-y-3">
+                        <div>
+                          <span className="text-[10px] font-semibold text-muted-foreground uppercase ml-1">Event / Subtitle</span>
+                          <input 
+                            value={design.eventText}
+                            onChange={(e) => setDesign({...design, eventText: e.target.value})}
+                            className="w-full px-3 py-2 bg-muted/50 border border-border/60 rounded-xl focus:border-accent focus:outline-none transition-colors text-sm mt-1"
+                          />
+                        </div>
+                        
+                        <div>
+                          <span className="text-[10px] font-semibold text-muted-foreground uppercase ml-1">Description</span>
+                          <textarea 
+                            value={design.descText}
+                            onChange={(e) => setDesign({...design, descText: e.target.value})}
+                            rows={3}
+                            className="w-full px-3 py-2 bg-muted/50 border border-border/60 rounded-xl focus:border-accent focus:outline-none transition-colors text-sm resize-none mt-1"
+                          />
+                          <div className="flex gap-1 mt-2">
+                            <button onClick={() => setDesign({...design, descAlign: 'left'})} className={`p-1.5 rounded ${design.descAlign === 'left' ? 'bg-accent/20 text-accent' : 'text-muted-foreground hover:bg-muted'}`}><AlignLeft className="w-4 h-4" /></button>
+                            <button onClick={() => setDesign({...design, descAlign: 'center'})} className={`p-1.5 rounded ${design.descAlign === 'center' ? 'bg-accent/20 text-accent' : 'text-muted-foreground hover:bg-muted'}`}><AlignCenter className="w-4 h-4" /></button>
+                            <button onClick={() => setDesign({...design, descAlign: 'right'})} className={`p-1.5 rounded ${design.descAlign === 'right' ? 'bg-accent/20 text-accent' : 'text-muted-foreground hover:bg-muted'}`}><AlignRight className="w-4 h-4" /></button>
+                            <button onClick={() => setDesign({...design, descAlign: 'justify'})} className={`p-1.5 rounded ${design.descAlign === 'justify' ? 'bg-accent/20 text-accent' : 'text-muted-foreground hover:bg-muted'}`}><AlignJustify className="w-4 h-4" /></button>
+                          </div>
+                        </div>
+
+                        <div>
+                          <span className="text-[10px] font-semibold text-muted-foreground uppercase ml-1">Date</span>
+                          <input 
+                            value={design.dateText}
+                            onChange={(e) => setDesign({...design, dateText: e.target.value})}
+                            className="w-full px-3 py-2 bg-muted/50 border border-border/60 rounded-xl focus:border-accent focus:outline-none transition-colors text-sm mt-1"
+                          />
+                        </div>
+                      </div>
                     </div>
 
                     {/* Typography Settings */}
@@ -493,6 +607,64 @@ export default function CertificatesPipelinePage() {
                               className="w-full accent-primary" 
                             />
                             <span className="text-xs font-medium w-8 text-right">{design.descSize}px</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Event Settings */}
+                      <div className="bg-muted/20 p-3 rounded-xl border border-border/30 space-y-3">
+                        <span className="text-xs font-semibold block">Event Name</span>
+                        <select 
+                          value={design.eventFont}
+                          onChange={(e) => setDesign({...design, eventFont: e.target.value})}
+                          className="w-full text-xs px-2 py-1.5 bg-background border border-border/60 rounded focus:border-accent focus:outline-none"
+                        >
+                          {FONT_OPTIONS.map(f => <option key={f.label} value={f.value}>{f.label}</option>)}
+                        </select>
+                        <div className="flex gap-3">
+                          <input 
+                            type="color" 
+                            value={design.eventColor}
+                            onChange={(e) => setDesign({...design, eventColor: e.target.value})}
+                            className="w-8 h-8 rounded cursor-pointer shrink-0 border-none bg-transparent" 
+                          />
+                          <div className="flex-1 flex items-center gap-2">
+                            <input 
+                              type="range" min="12" max="60" 
+                              value={design.eventSize}
+                              onChange={(e) => setDesign({...design, eventSize: parseInt(e.target.value)})}
+                              className="w-full accent-primary" 
+                            />
+                            <span className="text-xs font-medium w-8 text-right">{design.eventSize}px</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Date Settings */}
+                      <div className="bg-muted/20 p-3 rounded-xl border border-border/30 space-y-3">
+                        <span className="text-xs font-semibold block">Date</span>
+                        <select 
+                          value={design.dateFont}
+                          onChange={(e) => setDesign({...design, dateFont: e.target.value})}
+                          className="w-full text-xs px-2 py-1.5 bg-background border border-border/60 rounded focus:border-accent focus:outline-none"
+                        >
+                          {FONT_OPTIONS.map(f => <option key={f.label} value={f.value}>{f.label}</option>)}
+                        </select>
+                        <div className="flex gap-3">
+                          <input 
+                            type="color" 
+                            value={design.dateColor}
+                            onChange={(e) => setDesign({...design, dateColor: e.target.value})}
+                            className="w-8 h-8 rounded cursor-pointer shrink-0 border-none bg-transparent" 
+                          />
+                          <div className="flex-1 flex items-center gap-2">
+                            <input 
+                              type="range" min="10" max="60" 
+                              value={design.dateSize}
+                              onChange={(e) => setDesign({...design, dateSize: parseInt(e.target.value)})}
+                              className="w-full accent-primary" 
+                            />
+                            <span className="text-xs font-medium w-8 text-right">{design.dateSize}px</span>
                           </div>
                         </div>
                       </div>

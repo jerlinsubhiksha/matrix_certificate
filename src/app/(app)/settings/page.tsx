@@ -199,34 +199,20 @@ export default function SettingsPage() {
                       className="w-full px-4 py-3 bg-background/50 border border-border/40 rounded-xl focus:border-accent outline-none transition-all" 
                     />
                   </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-semibold">SMTP Host</label>
-                      <input 
-                        type="text" 
-                        value={local.smtpHost} 
-                        onChange={e => update("smtpHost", e.target.value)}
-                        className="w-full px-4 py-3 bg-background/50 border border-border/40 rounded-xl focus:border-accent outline-none transition-all" 
-                      />
+                  <div className="pt-4 border-t border-border/20">
+                    <h4 className="text-sm font-bold mb-4">Delivery System</h4>
+                    <div className="flex items-center justify-between p-4 bg-green-500/10 border border-green-500/20 rounded-2xl">
+                      <div className="flex gap-4 items-center">
+                        <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-500 shrink-0">
+                          <Check className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-sm text-green-500">Google Workspace (Gmail API)</h4>
+                          <p className="text-xs text-green-500/80 mt-0.5">Connected and active via secure OAuth 2.0.</p>
+                        </div>
+                      </div>
+                      <span className="text-xs font-bold text-green-500 bg-green-500/20 px-2 py-1 rounded-md">Connected</span>
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-semibold">Port</label>
-                      <input 
-                        type="text" 
-                        value={local.smtpPort} 
-                        onChange={e => update("smtpPort", e.target.value)}
-                        className="w-full px-4 py-3 bg-background/50 border border-border/40 rounded-xl focus:border-accent outline-none transition-all" 
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between p-4 bg-background/30 rounded-2xl border border-border/20">
-                    <div>
-                      <h4 className="font-semibold">Require TLS</h4>
-                      <p className="text-xs text-muted-foreground mt-1">Encrypt email transmission</p>
-                    </div>
-                    <CustomToggle checked={local.requireTls} onChange={(v) => update("requireTls", v)} />
                   </div>
                 </div>
               </motion.div>

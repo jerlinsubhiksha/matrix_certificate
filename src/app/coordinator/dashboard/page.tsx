@@ -1,88 +1,239 @@
 "use client";
 
-import React from "react";
-import { motion } from "framer-motion";
-import { Calendar, Users, Award, ShieldAlert } from "lucide-react";
-
-const STATS = [
-  { label: "Assigned Events", value: "3", icon: Calendar, color: "blue" },
-  { label: "Participants", value: "428", icon: Users, color: "indigo" },
-  { label: "Certificates Generated", value: "312", icon: Award, color: "emerald" },
-  { label: "Pending Approval", value: "27", icon: ShieldAlert, color: "amber" },
-];
+import React, { useEffect, useState } from "react";
+import { collection, query, where, getDocs, getCountFromServer } from "firebase/firestore";
+import { db } from "@/lib/firebase/client";
+import { useStore } from "@/lib/store";
+import Link from "next/link";
 
 export default function CoordinatorDashboard() {
+  const { user } = useStore();
+  const [stats, setStats] = useState({
+    totalEvents: 0,
+    inProgressEvents: 0,
+    totalCerts: 0,
+    emailsSent: 0,
+    emailsPending: 0,
+  });
+  const [recentEvents, setRecentEvents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      if (!db || !user?.email) {
+        // If user is not fully loaded yet, we wait, but if they have no email, we should stop loading
+        if (user && !user.email) setLoading(false);
+        return;
+      }
+
+      try {
+        // Fetch My Events
+        const eventsRef = collection(db, "events");
+        const q = query(eventsRef, where("createdBy", "==", user.email));
+        const querySnapshot = await getDocs(q);
+        
+        let eventsList: any[] = [];
+        let inProgress = 0;
+
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          eventsList.push({ id: doc.id, ...data });
+          if (data.status === "Active" || data.status === "Generating") {
+            inProgress++;
+          }
+        });
+
+        // Sort by date descending
+        eventsList.sort((a, b) => new Date(b.createdDate || 0).getTime() - new Date(a.createdDate || 0).getTime());
+        setRecentEvents(eventsList.slice(0, 5));
+
+        // Fetch Queue Stats for this coordinator
+        // Note: In a real robust system, you'd query queue where coordinator == user.email
+        // For now, assuming emailQueue has a coordinatorEmail field
+        const queueRef = collection(db, "emailQueue");
+        const sentQ = query(queueRef, where("coordinatorEmail", "==", user.email), where("status", "==", "Sent"));
+        const pendingQ = query(queueRef, where("coordinatorEmail", "==", user.email), where("status", "==", "Pending"));
+        
+        const sentCount = await getCountFromServer(sentQ).catch(() => ({ data: () => ({ count: 0 }) }));
+        const pendingCount = await getCountFromServer(pendingQ).catch(() => ({ data: () => ({ count: 0 }) }));
+
+        // Certificates generated (assuming certificates collection has coordinatorEmail)
+        const certsRef = collection(db, "certificates");
+        const certsQ = query(certsRef, where("coordinatorEmail", "==", user.email));
+        const certsCount = await getCountFromServer(certsQ).catch(() => ({ data: () => ({ count: 0 }) }));
+
+        setStats({
+          totalEvents: eventsList.length,
+          inProgressEvents: inProgress,
+          totalCerts: certsCount.data().count,
+          emailsSent: sentCount.data().count,
+          emailsPending: pendingCount.data().count,
+        });
+
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [user]);
+
+  const handleResumeSending = async () => {
+    if (!user?.email) return;
+    if (!confirm("Start sending all pending certificates in the queue?")) return;
+    
+    try {
+      const res = await fetch("/api/certificates/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ coordinatorEmail: user.email }),
+      });
+      const data = await res.json();
+      alert(data.message || `Sent ${data.sentCount} emails.`);
+      window.location.reload();
+    } catch (err: any) {
+      alert(`Error: ${err.message}`);
+    }
+  };
+
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
-      <div>
-        <h1 className="text-3xl font-semibold text-[#0F172A] tracking-tight">Welcome back, Sarah 👋</h1>
-        <p className="text-[#64748B] mt-2">Here's what needs your attention today.</p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {STATS.map((stat, idx) => {
-          const Icon = stat.icon;
-          return (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: idx * 0.1 }}
-              whileHover={{ y: -4 }}
-              className="bg-white p-6 rounded-2xl border border-[#E2E8F0] shadow-[0_4px_20px_rgba(15,23,42,0.03)] hover:shadow-[0_8px_30px_rgba(15,23,42,0.06)] transition-all"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <p className="text-sm font-medium text-[#64748B]">{stat.label}</p>
-                <div className={`p-2 rounded-lg bg-${stat.color}-50 text-${stat.color}-600`}>
-                  <Icon size={18} />
-                </div>
-              </div>
-              <div className="flex items-baseline gap-2">
-                <h3 className="text-2xl font-bold text-[#0F172A]">{stat.value}</h3>
-              </div>
-            </motion.div>
-          );
-        })}
-      </div>
-
-      <div className="mt-12">
-        <h3 className="text-xl font-semibold text-[#0F172A] mb-6">My Events</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[
-            { name: "Matrix Hackathon 2026", date: "12-14 Aug 2026", status: "Active", progress: 72 },
-            { name: "Design Workshop", date: "15 Sep 2026", status: "Upcoming", progress: 0 },
-          ].map((event, idx) => (
-            <motion.div
-              key={idx}
-              whileHover={{ y: -4 }}
-              className="bg-white p-6 rounded-2xl border border-[#E2E8F0] shadow-[0_4px_20px_rgba(15,23,42,0.03)] hover:shadow-[0_8px_30px_rgba(15,23,42,0.06)] transition-all cursor-pointer flex flex-col h-full"
-            >
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h4 className="font-semibold text-[#0F172A]">{event.name}</h4>
-                  <p className="text-sm text-[#64748B] mt-1">{event.date}</p>
-                </div>
-                <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${event.status === 'Active' ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-blue-700'}`}>
-                  {event.status}
-                </span>
-              </div>
-              
-              <div className="mt-auto pt-6">
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="text-[#64748B]">Certificate Progress</span>
-                  <span className="font-medium text-[#0F172A]">{event.progress}%</span>
-                </div>
-                <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-blue-600 rounded-full" 
-                    style={{ width: `${event.progress}%` }} 
-                  />
-                </div>
-              </div>
-            </motion.div>
-          ))}
+    <>
+      <div className="breadcrumb">Home &nbsp;›&nbsp; <b>Dashboard</b></div>
+      <div className="page-head">
+        <div>
+          <div className="eyebrow">Your workspace</div>
+          <h1>Welcome back, <span className="accent">{user?.displayName?.split(' ')[0] || "Coordinator"}</span></h1>
+        </div>
+        <div className="top-actions">
+          <Link href="/coordinator/events/new" className="pill-btn" style={{ textDecoration: 'none' }}>＋ New Event</Link>
+          <button onClick={handleResumeSending} className="pill-btn primary">Resume Sending</button>
         </div>
       </div>
-    </div>
+
+      <div className="stat-grid" style={{ gridTemplateColumns: "repeat(4,1fr)" }}>
+        <div className="stat-card">
+          <div className="stat-top">
+            <span className="stat-label">My Events</span>
+            <div className="stat-icon" style={{ background: "#8b5cf622", color: "#c9b5ff" }}>◷</div>
+          </div>
+          <div className="stat-value">{loading ? "..." : stats.totalEvents}</div>
+          <div className="stat-sub">{stats.inProgressEvents} in progress</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-top">
+            <span className="stat-label">Certificates</span>
+            <div className="stat-icon" style={{ background: "#f5a52422", color: "#f5a524" }}>▤</div>
+          </div>
+          <div className="stat-value">{loading ? "..." : stats.totalCerts}</div>
+          <div className="stat-sub">Generated by you</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-top">
+            <span className="stat-label">Emails Sent</span>
+            <div className="stat-icon" style={{ background: "#2fd48022", color: "#2fd480" }}>✉</div>
+          </div>
+          <div className="stat-value">{loading ? "..." : stats.emailsSent}</div>
+          <div className="stat-sub">All time</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-top">
+            <span className="stat-label">Pending</span>
+            <div className="stat-icon" style={{ background: "#f5a52422", color: "#f5a524" }}>◔</div>
+          </div>
+          <div className="stat-value">{loading ? "..." : stats.emailsPending}</div>
+          <div className="stat-sub">Queued for send</div>
+        </div>
+      </div>
+
+      <div className="grid-2">
+        <div className="panel">
+          <div className="panel-head">
+            <h3>Recent Pipeline Activity</h3>
+            <span className="see-all">View Logs</span>
+          </div>
+          {recentEvents.length > 0 ? (
+            <div className="stepper">
+              <div className="step">
+                <div className="step-dot done">✓</div>
+                <div className="step-body">
+                  <b>{recentEvents[0]?.name || "Event created"}</b><span>Template &amp; email content set</span>
+                </div>
+              </div>
+              <div className="step">
+                <div className="step-dot current">2</div>
+                <div className="step-body">
+                  <b>Pending Uploads</b><span>Awaiting participant list</span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div style={{ padding: '20px', color: '#635c7f', textAlign: 'center' }}>
+              No active pipelines. Create an event to get started.
+            </div>
+          )}
+        </div>
+        <div className="panel">
+          <div className="panel-head"><h3>Quick actions</h3></div>
+          <div className="quick-list">
+            <Link href="/coordinator/events/new" className="quick-item" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <div className="qi-icon">＋</div>
+              <div className="qi-text"><b>Create new event</b><span>Name, date, template</span></div>
+            </Link>
+            <Link href="/coordinator/events" className="quick-item" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <div className="qi-icon">⇪</div>
+              <div className="qi-text"><b>Upload participants</b><span>Open an event to upload</span></div>
+            </Link>
+            <Link href="/coordinator/certificates" className="quick-item" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <div className="qi-icon">▤</div>
+              <div className="qi-text"><b>View certificates</b><span>Generated PDF history</span></div>
+            </Link>
+            <Link href="/coordinator/send" className="quick-item" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <div className="qi-icon">✉</div>
+              <div className="qi-text"><b>Send queue</b><span>Track delivery status</span></div>
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      <div className="panel">
+        <div className="panel-head"><h3>My events</h3><span className="see-all">View all</span></div>
+        <table>
+          <thead>
+            <tr>
+              <th>Event Name</th>
+              <th>Date</th>
+              <th>Participants</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr><td colSpan={5} style={{ textAlign: 'center', padding: '20px', color: '#635c7f' }}>Loading...</td></tr>
+            ) : recentEvents.length === 0 ? (
+              <tr><td colSpan={5} style={{ textAlign: 'center', padding: '20px', color: '#635c7f' }}>No events found.</td></tr>
+            ) : (
+              recentEvents.map(event => (
+                <tr key={event.id}>
+                  <td><div className="name-cell">{event.name}</div></td>
+                  <td>{new Date(event.date || event.createdDate).toLocaleDateString()}</td>
+                  <td>{event.participantsCount || 0}</td>
+                  <td>
+                    <span className={`badge ${event.status === 'Sent' ? 'green' : event.status === 'Generating' ? 'violet' : 'amber'}`}>
+                      {event.status || 'Draft'}
+                    </span>
+                  </td>
+                  <td className="row-action">
+                    <Link href={`/coordinator/events/${event.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>Open ▾</Link>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }

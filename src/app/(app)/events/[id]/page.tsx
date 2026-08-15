@@ -21,50 +21,125 @@ import {
   MoreVertical,
   CheckCircle2,
   XCircle,
-  Clock3
+  Clock3,
+  Save
 } from "lucide-react";
+import { useStore } from "@/lib/store";
 
 const TABS = ["Overview", "Participants", "Certificates", "Email Queue", "Activity"];
-
-// Removed dummy data to reflect a clean slate
-const PARTICIPANTS: any[] = [];
-const CERTIFICATES: any[] = [];
-const EMAIL_QUEUE: any[] = [];
-const ACTIVITY: any[] = [];
 
 export default function EventDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  const { events, emailJobs, deleteEvent, updateEvent } = useStore();
+  
   const [activeTab, setActiveTab] = useState("Overview");
   const [searchQuery, setSearchQuery] = useState("");
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  const [eventDetails, setEventDetails] = useState({
-    id: id,
-    name: "Global Tech Summit 2026",
-    date: "August 15, 2026",
-    status: "Completed",
-    createdBy: "Alice Chen",
-    createdDate: "July 01, 2026",
-    template: "Standard Tech Event Template v2",
-    emailSubject: "Your Certificate for Global Tech Summit 2026",
-    emailBody: "Hi {Participant Name},\n\nThank you for attending the Global Tech Summit 2026. Attached is your certificate of participation.\n\nBest,\nThe MATRIX Team",
-    stats: {
-      participants: 1250,
-      certificates: 1250,
-      emailsSent: 1248,
-      bounces: 2
-    }
+  const realEvent = events.find(e => e.id === id);
+
+  const [editForm, setEditForm] = useState({
+    name: realEvent?.name || "",
+    date: realEvent?.date || "",
+    status: realEvent?.status || "Active"
   });
 
+  const [isEditingEmailConfig, setIsEditingEmailConfig] = useState(false);
+  const [emailConfigForm, setEmailConfigForm] = useState({
+    subject: realEvent?.emailSubject || `Your Certificate for ${realEvent?.name}`,
+    body: realEvent?.emailBody || `Hi {Participant Name},\n\nThank you for attending ${realEvent?.name}. Attached is your certificate of participation.\n\nBest,\nThe MATRIX Team`
+  });
+
+  React.useEffect(() => {
+    if (realEvent) {
+      setEmailConfigForm({
+        subject: realEvent.emailSubject || `Your Certificate for ${realEvent.name}`,
+        body: realEvent.emailBody || `Hi {Participant Name},\n\nThank you for attending ${realEvent.name}. Attached is your certificate of participation.\n\nBest,\nThe MATRIX Team`
+      });
+    }
+  }, [realEvent?.emailSubject, realEvent?.emailBody, realEvent?.name]);
+
+  if (!realEvent) {
+    return <div className="p-10 text-center font-bold text-xl text-muted-foreground mt-20">Event not found.</div>;
+  }
+
+  const eventEmails = emailJobs.filter(job => job.eventId === id);
+  const totalEmails = eventEmails.length;
+  const sentEmails = eventEmails.filter(job => job.status === 'Completed').length;
+  const failedEmails = eventEmails.filter(job => job.status === 'Failed').length;
+
+  // Group by unique emails to get accurate participant count, even if we dispatched to them multiple times
+  const uniqueParticipantsMap = new Map();
+  eventEmails.forEach(job => {
+    if (!uniqueParticipantsMap.has(job.participantEmail)) {
+      uniqueParticipantsMap.set(job.participantEmail, {
+        id: job.id,
+        name: job.participantName,
+        email: job.participantEmail,
+        status: job.status === 'Completed' ? 'Attended' : 'Registered',
+        date: new Date(job.timestamp).toLocaleDateString()
+      });
+    }
+  });
+  const PARTICIPANTS = Array.from(uniqueParticipantsMap.values());
+  const uniqueParticipantsCount = PARTICIPANTS.length;
+
+  const eventDetails = {
+    id: id,
+    name: realEvent.name,
+    date: realEvent.date,
+    status: realEvent.status,
+    createdBy: realEvent.coordinator,
+    createdDate: realEvent.date,
+    template: "Custom Template",
+    emailSubject: realEvent.emailSubject || `Your Certificate for ${realEvent.name}`,
+    emailBody: realEvent.emailBody || `Hi {Participant Name},\n\nThank you for attending ${realEvent.name}. Attached is your certificate of participation.\n\nBest,\nThe MATRIX Team`,
+    stats: {
+      participants: uniqueParticipantsCount > 0 ? uniqueParticipantsCount : realEvent.participantsCount || 0,
+      certificates: sentEmails,
+      emailsSent: totalEmails,
+      bounces: failedEmails
+    }
+  };
+
+  const CERTIFICATES = eventEmails.map(eq => ({
+    id: eq.id,
+    recipient: eq.participantName,
+    issueDate: new Date(eq.timestamp).toLocaleDateString(),
+    status: eq.status === 'Completed' ? 'Issued' : 'Failed'
+  }));
+
+  const EMAIL_QUEUE = eventEmails.map(eq => ({
+    id: eq.id,
+    recipient: eq.participantEmail,
+    subject: eventDetails.emailSubject,
+    status: eq.status === 'Completed' ? 'Sent' : eq.status,
+    time: new Date(eq.timestamp).toLocaleTimeString()
+  }));
+
+  const ACTIVITY = eventEmails.map(eq => ({
+    id: eq.id,
+    action: eq.status === 'Completed' ? 'Certificate Issued' : 'Delivery Failed',
+    time: new Date(eq.timestamp).toLocaleString(),
+    details: `Dispatched to ${eq.participantName} (${eq.participantEmail})`,
+    icon: Mail,
+    color: eq.status === 'Completed' ? 'text-green-500' : 'text-red-500'
+  })).reverse();
+
   const handleDelete = () => {
-    // Mock delete logic
-    router.push("/admin/events"); // redirect back to events list
+    deleteEvent(id);
+    router.push("/"); 
   };
 
   const handleSaveEdit = (e: React.FormEvent) => {
     e.preventDefault();
+    updateEvent(id, {
+      name: editForm.name,
+      date: editForm.date,
+      status: editForm.status as any
+    });
     setShowEditModal(false);
   };
 
@@ -135,7 +210,7 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
             <span className="text-xs font-semibold uppercase tracking-wider">Bounce Rate</span>
             <ActivityIcon className="w-4 h-4" />
           </div>
-          <span className="text-2xl font-bold">{(eventDetails.stats.bounces / eventDetails.stats.emailsSent * 100).toFixed(2)}%</span>
+          <span className="text-2xl font-bold">{eventDetails.stats.emailsSent > 0 ? (eventDetails.stats.bounces / eventDetails.stats.emailsSent * 100).toFixed(2) : "0.00"}%</span>
           <span className="text-xs text-muted-foreground">{eventDetails.stats.bounces} failed deliveries</span>
         </div>
       </div>
@@ -185,35 +260,50 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
                     </div>
                   </div>
                 </div>
-                <div>
-                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Design</h3>
-                  <Link href={`/admin/templates/1/editor`} className="block">
-                    <div className="bg-background border border-border/40 rounded-lg p-5 flex items-center justify-between group cursor-pointer hover:border-accent/40 transition-colors shadow-sm">
-                      <div className="flex items-center gap-4">
-                        <div className="p-3 bg-accent/10 text-accent rounded-lg"><FileText className="w-6 h-6"/></div>
-                        <div>
-                          <span className="font-semibold block text-foreground/90">{eventDetails.template}</span>
-                          <span className="text-xs text-muted-foreground">PDF Document Template</span>
-                        </div>
-                      </div>
-                      <ArrowUpRight className="w-5 h-5 text-muted-foreground group-hover:text-accent transition-colors" />
-                    </div>
-                  </Link>
-                </div>
               </div>
 
               <div>
-                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Email Configuration</h3>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Email Configuration</h3>
+                  {!isEditingEmailConfig ? (
+                    <button onClick={() => setIsEditingEmailConfig(true)} className="text-xs text-accent hover:underline flex items-center gap-1">
+                      <Edit className="w-3 h-3" /> Edit
+                    </button>
+                  ) : (
+                    <button onClick={() => {
+                      updateEvent(id, { emailSubject: emailConfigForm.subject, emailBody: emailConfigForm.body });
+                      setIsEditingEmailConfig(false);
+                    }} className="text-xs text-green-500 hover:underline flex items-center gap-1">
+                      <Save className="w-3 h-3" /> Save
+                    </button>
+                  )}
+                </div>
                 <div className="bg-background border border-border/40 rounded-lg p-5 flex flex-col h-full min-h-[300px] shadow-sm">
                   <div className="mb-4">
                     <span className="text-xs text-muted-foreground block mb-1">Subject Line</span>
-                    <span className="font-semibold text-foreground/90">{eventDetails.emailSubject}</span>
+                    {isEditingEmailConfig ? (
+                      <input 
+                        value={emailConfigForm.subject} 
+                        onChange={(e) => setEmailConfigForm({...emailConfigForm, subject: e.target.value})}
+                        className="w-full px-3 py-2 bg-muted/50 border border-border/60 rounded-md focus:border-accent focus:outline-none transition-colors text-sm text-foreground/90 font-semibold"
+                      />
+                    ) : (
+                      <span className="font-semibold text-foreground/90">{eventDetails.emailSubject}</span>
+                    )}
                   </div>
                   <div className="flex-1 flex flex-col">
                     <span className="text-xs text-muted-foreground block mb-1">Email Body</span>
-                    <div className="flex-1 bg-muted/20 border border-border/40 rounded-md p-4 text-sm whitespace-pre-wrap font-mono text-muted-foreground">
-                      {eventDetails.emailBody}
-                    </div>
+                    {isEditingEmailConfig ? (
+                      <textarea 
+                        value={emailConfigForm.body}
+                        onChange={(e) => setEmailConfigForm({...emailConfigForm, body: e.target.value})}
+                        className="w-full h-full min-h-[150px] px-3 py-2 bg-muted/50 border border-border/60 rounded-md focus:border-accent focus:outline-none transition-colors text-sm whitespace-pre-wrap font-mono text-muted-foreground resize-none"
+                      />
+                    ) : (
+                      <div className="flex-1 bg-muted/20 border border-border/40 rounded-md p-4 text-sm whitespace-pre-wrap font-mono text-muted-foreground">
+                        {eventDetails.emailBody}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -461,8 +551,8 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
                 <label className="text-sm font-semibold text-muted-foreground mb-1 block">Event Name</label>
                 <input 
                   type="text" 
-                  value={eventDetails.name}
-                  onChange={e => setEventDetails({...eventDetails, name: e.target.value})}
+                  value={editForm.name}
+                  onChange={e => setEditForm({...editForm, name: e.target.value})}
                   className="w-full px-4 py-2 bg-background border border-border/50 rounded-lg focus:border-accent focus:outline-none"
                   required
                 />
@@ -471,8 +561,8 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
                 <label className="text-sm font-semibold text-muted-foreground mb-1 block">Event Date</label>
                 <input 
                   type="text" 
-                  value={eventDetails.date}
-                  onChange={e => setEventDetails({...eventDetails, date: e.target.value})}
+                  value={editForm.date}
+                  onChange={e => setEditForm({...editForm, date: e.target.value})}
                   className="w-full px-4 py-2 bg-background border border-border/50 rounded-lg focus:border-accent focus:outline-none"
                   required
                 />
@@ -480,8 +570,8 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
               <div>
                 <label className="text-sm font-semibold text-muted-foreground mb-1 block">Status</label>
                 <select 
-                  value={eventDetails.status}
-                  onChange={e => setEventDetails({...eventDetails, status: e.target.value})}
+                  value={editForm.status}
+                  onChange={e => setEditForm({...editForm, status: e.target.value})}
                   className="w-full px-4 py-2 bg-background border border-border/50 rounded-lg focus:border-accent focus:outline-none appearance-none"
                 >
                   <option value="Active">Active</option>

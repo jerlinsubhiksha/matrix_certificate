@@ -12,6 +12,7 @@ import {
   ArrowUpRight,
   ArrowDownRight
 } from "lucide-react";
+import { useStore } from "@/lib/store";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -27,6 +28,22 @@ const itemVariants = {
 };
 
 export default function AnalyticsPage() {
+  const { events, emailJobs, participants } = useStore();
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
+
+  const totalCertificates = emailJobs.filter(j => j.status === 'Completed').length;
+  const totalParticipants = participants.length;
+  const activeEvents = events.filter(e => e.status === 'Active').length;
+  
+  const totalEmails = emailJobs.length;
+  const deliveredEmails = emailJobs.filter(j => j.status === 'Completed').length;
+  const bouncedEmails = emailJobs.filter(j => j.status === 'Failed').length;
+  const deliveryRate = totalEmails > 0 ? ((deliveredEmails / totalEmails) * 100).toFixed(1) : "0.0";
+  const donutPercentage = totalEmails > 0 ? (deliveredEmails / totalEmails) * 100 : 0;
+
+  if (!mounted) return null;
+
   return (
     <div className="flex flex-col gap-10 max-w-[1600px] mx-auto pb-20">
       
@@ -51,10 +68,10 @@ export default function AnalyticsPage() {
         viewport={{ once: true, margin: "-50px" }}
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
       >
-        <StatCard title="Total Certificates" value="12,450" icon={FileCheck} trend="+14.2%" positive />
-        <StatCard title="Total Participants" value="15,200" icon={Users} trend="+8.1%" positive />
-        <StatCard title="Active Events" value="42" icon={Calendar} trend="-2.4%" positive={false} />
-        <StatCard title="Email Delivery Rate" value="98.5%" icon={MailCheck} trend="+0.5%" positive />
+        <StatCard title="Total Certificates" value={totalCertificates.toLocaleString()} icon={FileCheck} trend="+14.2%" positive />
+        <StatCard title="Total Participants" value={totalParticipants.toLocaleString()} icon={Users} trend="+8.1%" positive />
+        <StatCard title="Active Events" value={activeEvents.toString()} icon={Calendar} trend="-2.4%" positive={false} />
+        <StatCard title="Email Delivery Rate" value={`${deliveryRate}%`} icon={MailCheck} trend="+0.5%" positive />
       </motion.div>
 
       {/* Main Charts Row */}
@@ -133,13 +150,13 @@ export default function AnalyticsPage() {
                   fill="none" 
                   strokeDasharray="251.2" 
                   initial={{ strokeDashoffset: 251.2 }}
-                  whileInView={{ strokeDashoffset: 251.2 * 0.15 }} // 85% full
+                  whileInView={{ strokeDashoffset: 251.2 * (1 - donutPercentage / 100) }}
                   viewport={{ once: true }}
                   transition={{ duration: 1.5, ease: "easeOut" }}
                 />
               </svg>
               <div className="absolute inset-0 flex items-center justify-center flex-col">
-                <span className="text-3xl font-extrabold tracking-tight">85%</span>
+                <span className="text-3xl font-extrabold tracking-tight">{deliveryRate}%</span>
                 <span className="text-[10px] text-muted-foreground uppercase font-bold">Delivered</span>
               </div>
             </div>
@@ -150,14 +167,14 @@ export default function AnalyticsPage() {
                   <div className="w-3 h-3 rounded-full bg-accent"></div>
                   <span className="font-medium">Delivered</span>
                 </div>
-                <span className="font-bold">10,582</span>
+                <span className="font-bold">{deliveredEmails.toLocaleString()}</span>
               </div>
               <div className="flex justify-between items-center text-sm">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-muted-foreground/30"></div>
                   <span className="font-medium">Bounced</span>
                 </div>
-                <span className="font-bold">1,868</span>
+                <span className="font-bold">{bouncedEmails.toLocaleString()}</span>
               </div>
             </div>
           </div>

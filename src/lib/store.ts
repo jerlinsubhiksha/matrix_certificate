@@ -3,6 +3,16 @@ import { persist } from 'zustand/middleware';
 
 export type EventStatus = 'Draft' | 'Active' | 'Completed';
 
+export interface CertificateField {
+  field: "participant_name" | "email" | "event_name" | "event_date" | "certificate_id" | "department" | "institution" | "register_number";
+  x: number;
+  y: number;
+  font: string;
+  fontSize: number;
+  alignment: "left" | "center" | "right";
+  color: string;
+}
+
 export interface Event {
   id: string;
   name: string;
@@ -10,6 +20,11 @@ export interface Event {
   date: string;
   status: EventStatus;
   participantsCount: number;
+  templateDriveFileId?: string;
+  templateUrl?: string;
+  fields?: CertificateField[];
+  emailSubject?: string;
+  emailBody?: string;
 }
 
 export interface Coordinator {
@@ -18,6 +33,15 @@ export interface Coordinator {
   email: string;
   role: string;
   status: 'Active' | 'Inactive';
+}
+
+export interface Participant {
+  id: string;
+  name: string;
+  email: string;
+  event: string;
+  status: 'Verified' | 'Pending' | 'Failed';
+  date: string;
 }
 
 export type QueueStatus = 'Pending' | 'Generating' | 'Sending' | 'Completed' | 'Failed';
@@ -48,6 +72,7 @@ export interface AppSettings {
 interface AppState {
   events: Event[];
   coordinators: Coordinator[];
+  participants: Participant[];
   certificatesGenerated: number;
   emailsSent: number;
   emailJobs: EmailJob[];
@@ -65,6 +90,11 @@ interface AppState {
   addCoordinator: (coordinator: Omit<Coordinator, 'id'>) => void;
   updateCoordinator: (id: string, coordinator: Partial<Coordinator>) => void;
   deleteCoordinator: (id: string) => void;
+
+  addParticipant: (participant: Omit<Participant, 'id'>) => void;
+  addParticipants: (participants: Omit<Participant, 'id'>[]) => void;
+  removeParticipant: (id: string) => void;
+  updateParticipant: (id: string, updates: Partial<Participant>) => void;
 
   incrementCertificates: (count: number) => void;
   incrementEmails: (count: number) => void;
@@ -85,7 +115,9 @@ export const useStore = create<AppState>()(
           coordinator: 'Alice Johnson',
           date: '2026-09-15',
           status: 'Active',
-          participantsCount: 150
+          participantsCount: 150,
+          emailSubject: 'Your Certificate for Annual Tech Symposium',
+          emailBody: 'Hi {Participant Name},\n\nThank you for attending Annual Tech Symposium. Attached is your certificate of participation.\n\nBest,\nThe MATRIX Team'
         }
       ],
       coordinators: [
@@ -97,8 +129,9 @@ export const useStore = create<AppState>()(
           status: 'Active'
         }
       ],
-      certificatesGenerated: 1250,
-      emailsSent: 1200,
+      participants: [],
+      certificatesGenerated: 0,
+      emailsSent: 0,
       emailJobs: [],
       settings: {
         workspaceName: "Acme Corp Certification",
@@ -107,10 +140,10 @@ export const useStore = create<AppState>()(
         smtpHost: "smtp.mailgun.org",
         smtpPort: "587",
         requireTls: true,
-        twoFactorAuth: false,
+        twoFactorAuth: true,
         sessionTimeout: "30",
         emailAlerts: true,
-        systemUpdates: false,
+        systemUpdates: true,
         logoUrl: "/logo.png"
       },
 
@@ -154,6 +187,22 @@ export const useStore = create<AppState>()(
       
       deleteCoordinator: (id) => set((state) => ({
         coordinators: state.coordinators.filter(c => c.id !== id)
+      })),
+
+      addParticipant: (p) => set((state) => ({
+        participants: [{ ...p, id: `P-${Date.now()}-${Math.floor(Math.random() * 1000)}` }, ...state.participants]
+      })),
+      
+      addParticipants: (newParticipants) => set((state) => ({
+        participants: [...newParticipants.map((p, i) => ({ ...p, id: `P-${Date.now()}-${i}` })), ...state.participants]
+      })),
+      
+      removeParticipant: (id) => set((state) => ({
+        participants: state.participants.filter(p => p.id !== id)
+      })),
+      
+      updateParticipant: (id, updates) => set((state) => ({
+        participants: state.participants.map(p => p.id === id ? { ...p, ...updates } : p)
       })),
 
       incrementCertificates: (count) => set((state) => ({

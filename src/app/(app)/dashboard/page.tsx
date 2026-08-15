@@ -21,7 +21,7 @@ import {
 import { useStore } from "@/lib/store";
 
 export default function DashboardPage() {
-  const { events, coordinators, certificatesGenerated, emailsSent } = useStore();
+  const { events, coordinators, emailJobs } = useStore();
   
   // Hydration fix for zustand persist
   const [mounted, setMounted] = useState(false);
@@ -31,8 +31,10 @@ export default function DashboardPage() {
 
   if (!mounted) return null; // Avoid hydration mismatch
 
-  const pendingEmails = Math.floor(emailsSent * 0.1); // Mock data for pending
-  const failedEmails = Math.floor(emailsSent * 0.02); // Mock data for failed
+  const realCertificates = emailJobs.filter(j => j.status === 'Completed').length;
+  const realEmailsSent = emailJobs.filter(j => j.status === 'Completed').length;
+  const pendingEmails = emailJobs.filter(j => ['Pending', 'Generating', 'Sending'].includes(j.status)).length;
+  const failedEmails = emailJobs.filter(j => j.status === 'Failed').length;
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -64,8 +66,8 @@ export default function DashboardPage() {
       <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
         <StatCard title="Total Events" value={events.length.toString()} icon={CalendarDays} color="text-blue-500" bg="bg-blue-500/10" />
         <StatCard title="Coordinators" value={coordinators.length.toString()} icon={UsersRound} color="text-indigo-500" bg="bg-indigo-500/10" />
-        <StatCard title="Certificates" value={certificatesGenerated.toString()} icon={FileCheck} color="text-accent" bg="bg-accent/10" />
-        <StatCard title="Emails Sent" value={emailsSent.toString()} icon={Mail} color="text-green-500" bg="bg-green-500/10" />
+        <StatCard title="Certificates" value={realCertificates.toString()} icon={FileCheck} color="text-accent" bg="bg-accent/10" />
+        <StatCard title="Emails Sent" value={realEmailsSent.toString()} icon={Mail} color="text-green-500" bg="bg-green-500/10" />
         <StatCard title="Pending Emails" value={pendingEmails.toString()} icon={Clock} color="text-amber-500" bg="bg-amber-500/10" />
         <StatCard title="Failed Emails" value={failedEmails.toString()} icon={XCircle} color="text-red-500" bg="bg-red-500/10" />
       </motion.div>

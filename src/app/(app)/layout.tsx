@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion, useScroll, useSpring, AnimatePresence } from "framer-motion";
 import { 
   LayoutDashboard, 
@@ -62,6 +62,39 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     damping: 30,
     restDelta: 0.001
   });
+
+  const router = useRouter();
+
+  React.useEffect(() => {
+    if (!settings?.sessionTimeout || settings.sessionTimeout === 'never') return;
+    
+    const timeoutMinutes = parseInt(settings.sessionTimeout);
+    if (isNaN(timeoutMinutes)) return;
+    
+    let lastActivity = Date.now();
+    const updateActivity = () => { lastActivity = Date.now(); };
+    
+    // Listen for user interactions
+    window.addEventListener('mousemove', updateActivity);
+    window.addEventListener('keydown', updateActivity);
+    window.addEventListener('click', updateActivity);
+    window.addEventListener('scroll', updateActivity, true);
+    
+    // Check inactivity every minute
+    const interval = setInterval(() => {
+      if (Date.now() - lastActivity > timeoutMinutes * 60 * 1000) {
+        router.push('/login');
+      }
+    }, 60000);
+    
+    return () => {
+      window.removeEventListener('mousemove', updateActivity);
+      window.removeEventListener('keydown', updateActivity);
+      window.removeEventListener('click', updateActivity);
+      window.removeEventListener('scroll', updateActivity, true);
+      clearInterval(interval);
+    };
+  }, [settings?.sessionTimeout, router]);
 
   const pathSegments = pathname.split('/').filter(Boolean);
 

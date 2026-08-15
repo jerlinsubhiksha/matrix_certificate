@@ -51,3 +51,23 @@ export async function verifySession() {
     return null;
   }
 }
+
+/**
+ * STRICT AUTHORIZATION GUARD
+ * Use this in Server Actions and API Routes to guarantee the caller has a specific role.
+ * This is the "Security Guard" checking the key at the inner door.
+ */
+export async function verifySessionAndRole(requiredRole: "ADMIN" | "COORDINATOR") {
+  const claims = await verifySession();
+  
+  if (!claims) {
+    throw new Error("UNAUTHENTICATED: No valid session found.");
+  }
+
+  if (claims.role !== requiredRole) {
+    console.error(`ACCESS DENIED: User ${claims.uid} (Role: ${claims.role}) attempted to access ${requiredRole} resource.`);
+    throw new Error(`UNAUTHORIZED: Requires ${requiredRole} role.`);
+  }
+
+  return claims;
+}

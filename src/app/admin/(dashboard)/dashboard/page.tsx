@@ -18,10 +18,10 @@ const STATS = [
 export default function AdminDashboard() {
   const { user } = useStore();
   const [stats, setStats] = useState([
-    { label: "Certificates", value: "...", trend: null, icon: Award, color: "blue" },
-    { label: "Active Events", value: "...", trend: null, icon: TrendingUp, color: "indigo" },
-    { label: "Coordinators", value: "...", trend: null, icon: Users, color: "slate" },
-    { label: "Verification", value: "...", trend: null, icon: ShieldCheck, color: "emerald" },
+    { label: "Certificates", value: "...", trend: null as string | null, icon: Award, color: "blue" },
+    { label: "Active Events", value: "...", trend: null as string | null, icon: TrendingUp, color: "indigo" },
+    { label: "Coordinators", value: "...", trend: null as string | null, icon: Users, color: "slate" },
+    { label: "Verification", value: "...", trend: null as string | null, icon: ShieldCheck, color: "emerald" },
   ]);
 
   useEffect(() => {

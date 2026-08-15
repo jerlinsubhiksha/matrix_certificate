@@ -15,15 +15,15 @@ import {
   CheckCircle2,
   AlertCircle
 } from "lucide-react";
-
-const MOCK_PARTICIPANTS: any[] = [];
+import { useStore } from "@/lib/store";
 
 export default function ParticipantsPage() {
+  const { participants, addParticipant, addParticipants, removeParticipant } = useStore();
+  
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [participantToDelete, setParticipantToDelete] = useState<string | null>(null);
-  const [participants, setParticipants] = useState(MOCK_PARTICIPANTS);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -65,7 +65,7 @@ export default function ParticipantsPage() {
         return participant;
       });
 
-      setParticipants(prev => [...newParticipants, ...prev]);
+      addParticipants(newParticipants);
     };
     
     reader.readAsText(file);
@@ -87,11 +87,10 @@ export default function ParticipantsPage() {
     e.preventDefault();
     if (!newParticipant.name || !newParticipant.email) return;
     
-    setParticipants([{ 
-      id: `P-${Date.now()}`, 
+    addParticipant({ 
       ...newParticipant, 
       date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) 
-    }, ...participants]);
+    } as any);
     
     setIsModalOpen(false);
     setNewParticipant({ ...newParticipant, name: "", email: "" });
@@ -135,7 +134,7 @@ export default function ParticipantsPage() {
 
   const confirmDelete = () => {
     if (participantToDelete) {
-      setParticipants(participants.filter(p => p.id !== participantToDelete));
+      removeParticipant(participantToDelete);
       setParticipantToDelete(null);
     }
   };
@@ -156,27 +155,7 @@ export default function ParticipantsPage() {
         </div>
         
         <div className="flex items-center gap-3">
-          <input 
-            type="file" 
-            accept=".csv" 
-            ref={fileInputRef} 
-            className="hidden" 
-            onChange={handleFileUpload} 
-          />
-          <button 
-            onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-2 px-4 py-2.5 bg-card/40 backdrop-blur-md border border-border/30 rounded-xl text-sm font-semibold hover:bg-muted hover:text-foreground hover:scale-105 active:scale-95 transition-all shadow-sm cursor-pointer"
-          >
-            <Upload className="w-4 h-4" />
-            Import CSV
-          </button>
-          <button 
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-foreground text-background font-semibold rounded-xl hover:scale-105 transition-transform active:scale-95 shadow-[0_4px_14px_0_rgba(0,0,0,0.1)] dark:shadow-[0_4px_14px_0_rgba(255,255,255,0.1)]"
-          >
-            <UserPlus className="w-4 h-4" />
-            Add Participant
-          </button>
+          {/* Add/Import Buttons Removed per user request */}
         </div>
       </motion.header>
 
@@ -249,15 +228,8 @@ export default function ParticipantsPage() {
                         </div>
                         <h3 className="text-xl font-bold text-foreground mb-2">No participants found</h3>
                         <p className="text-muted-foreground max-w-sm mx-auto mb-6">
-                          Get started by adding participants manually or importing them via CSV.
+                          Your participant history will automatically appear here once you generate certificates from the Certificate Generator.
                         </p>
-                        <button 
-                          onClick={() => setIsModalOpen(true)}
-                          className="flex items-center gap-2 px-5 py-2.5 bg-foreground text-background font-semibold rounded-xl hover:scale-105 transition-transform active:scale-95 shadow-[0_4px_14px_0_rgba(0,0,0,0.1)] dark:shadow-[0_4px_14px_0_rgba(255,255,255,0.1)]"
-                        >
-                          <UserPlus className="w-4 h-4" />
-                          Add Participant
-                        </button>
                       </div>
                     </td>
                   </motion.tr>

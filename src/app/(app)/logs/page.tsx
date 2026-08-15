@@ -13,20 +13,45 @@ import {
   Trash2
 } from "lucide-react";
 
-const MOCK_LOGS = [
-  { id: 1, type: "INFO", message: "System initialized successfully.", time: "10:05:22 AM", date: "Aug 12" },
-  { id: 2, type: "SUCCESS", message: "Batch processing completed for Event #402. 120 certificates generated.", time: "10:12:45 AM", date: "Aug 12" },
-  { id: 3, type: "ERROR", message: "SMTP connection failed. Timeout after 30000ms.", time: "10:15:02 AM", date: "Aug 12" },
-  { id: 4, type: "INFO", message: "User Admin logged in from IP 192.168.1.1", time: "10:20:11 AM", date: "Aug 12" },
-  { id: 5, type: "WARNING", message: "High memory usage detected in rendering worker.", time: "10:25:33 AM", date: "Aug 12" },
-  { id: 6, type: "INFO", message: "CRON Job 'Daily_Backup' executed.", time: "11:00:00 AM", date: "Aug 12" },
-  { id: 7, type: "SUCCESS", message: "Settings updated by User Admin.", time: "11:05:14 AM", date: "Aug 12" },
-];
+import { useStore } from "@/lib/store";
 
 export default function LogsPage() {
+  const { emailJobs } = useStore();
   const [searchQuery, setSearchQuery] = useState("");
+  const [clearedAt, setClearedAt] = useState<number>(0);
+  const [mounted, setMounted] = useState(false);
+  React.useEffect(() => setMounted(true), []);
 
-  const filteredLogs = MOCK_LOGS.filter(l => l.message.toLowerCase().includes(searchQuery.toLowerCase()));
+  const generatedLogs = emailJobs
+    .filter(job => new Date(job.timestamp).getTime() > clearedAt)
+    .map(job => {
+      let type = "INFO";
+      let message = "";
+      if (job.status === 'Completed') {
+        type = "SUCCESS";
+        message = `Successfully generated and sent certificate to ${job.participantName} (${job.participantEmail}).`;
+      } else if (job.status === 'Failed') {
+        type = "ERROR";
+        message = `Failed to deliver certificate to ${job.participantName} (${job.participantEmail}).`;
+      } else {
+        type = "INFO";
+        message = `Queued certificate generation for ${job.participantName} (${job.participantEmail}).`;
+      }
+      
+      const d = new Date(job.timestamp);
+      return {
+        id: job.id,
+        type,
+        message,
+        time: d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        date: d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+      };
+    })
+    .reverse(); // Show newest first
+
+  const filteredLogs = generatedLogs.filter(l => l.message.toLowerCase().includes(searchQuery.toLowerCase()));
+
+  if (!mounted) return null;
 
   return (
     <div className="flex flex-col gap-8 max-w-[1200px] mx-auto pb-10 h-[calc(100vh-80px)]">
@@ -47,7 +72,10 @@ export default function LogsPage() {
           <button className="flex items-center gap-2 px-4 py-2.5 bg-card/40 backdrop-blur-md border border-border/30 rounded-xl text-sm font-semibold hover:bg-muted/50 transition-colors shadow-sm">
             <Download className="w-4 h-4" /> Export Logs
           </button>
-          <button className="flex items-center gap-2 px-4 py-2.5 bg-red-500/10 text-red-500 rounded-xl text-sm font-semibold hover:bg-red-500/20 transition-colors shadow-sm">
+          <button 
+            onClick={() => setClearedAt(Date.now())}
+            className="flex items-center gap-2 px-4 py-2.5 bg-red-500/10 text-red-500 rounded-xl text-sm font-semibold hover:bg-red-500/20 transition-colors shadow-sm"
+          >
             <Trash2 className="w-4 h-4" /> Clear All
           </button>
         </div>
