@@ -50,7 +50,10 @@ const Navbar = () => {
           M
         </div>
         <div className="flex flex-col leading-none">
-          <span className="font-bold text-lg text-primary tracking-tight">MATRIX</span>
+          <div className="flex items-center gap-2">
+            <img src="/logo.png" alt="Matrix Logo" className="w-6 h-6 object-contain" />
+            <span className="font-bold text-lg text-primary tracking-tight">MATRIX</span>
+          </div>
           <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">Certificate System</span>
         </div>
       </Link>
@@ -417,7 +420,10 @@ const Footer = () => (
         <div className="w-6 h-6 rounded-md bg-primary flex items-center justify-center text-primary-foreground dark:text-gray-900 font-bold text-xs">
           M
         </div>
-        <span className="font-bold text-lg text-primary tracking-tight">MATRIX</span>
+        <div className="flex items-center gap-2 mb-4">
+          <img src="/logo.png" alt="Matrix Logo" className="w-6 h-6 object-contain" />
+          <span className="font-bold text-lg text-primary tracking-tight">MATRIX</span>
+        </div>
       </Link>
       
       <div className="flex flex-wrap items-center justify-center gap-6 text-sm font-medium text-muted-foreground">

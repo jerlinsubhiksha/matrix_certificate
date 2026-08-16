@@ -49,17 +49,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { currentUser, role, loading, logout, userProfile } = useAuth();
 
-  // Redirect if not logged in
+  // Redirect if not logged in or not admin
   React.useEffect(() => {
-    if (!loading && !currentUser) {
-      router.push("/login");
+    if (!loading) {
+      if (!currentUser) {
+        router.push("/login");
+      } else if (role && role.toLowerCase() !== 'admin') {
+        router.push("/coordinator/dashboard");
+      }
     }
-  }, [currentUser, loading, router]);
+  }, [currentUser, loading, role, router]);
 
   // Generate breadcrumb from pathname
   const pathSegments = pathname.split('/').filter(Boolean);
 
-  if (loading || !currentUser) {
+  if (loading || !currentUser || !role || role.toLowerCase() !== 'admin') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
         <div className="flex flex-col items-center gap-4">
@@ -96,7 +100,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 M
               </div>
               {(!collapsed || mobileOpen) && (
-                <span className="font-bold text-lg tracking-tight whitespace-nowrap">MATRIX</span>
+                <span className="font-bold text-lg tracking-tight whitespace-nowrap flex items-center gap-2">
+                  <img src="/logo.png" alt="Matrix Logo" className="w-6 h-6 object-contain" />
+                  MATRIX
+                </span>
               )}
             </div>
             

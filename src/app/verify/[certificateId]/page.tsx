@@ -14,7 +14,10 @@ export default async function VerifyPage({ params }: { params: Promise<{ certifi
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-4 font-sans text-[#0F172A]">
       
       <div className="text-center mb-8">
-        <h1 className="text-2xl font-bold tracking-tight text-[#0F172A]">MATRIX</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-[#0F172A] flex items-center gap-2">
+          <img src="/logo.png" alt="Matrix Logo" className="w-8 h-8 object-contain" />
+          MATRIX
+        </h1>
         <p className="text-[#64748B] text-sm mt-1">Official Certification Record</p>
       </div>
 

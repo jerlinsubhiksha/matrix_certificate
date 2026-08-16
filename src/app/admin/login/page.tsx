@@ -62,7 +62,10 @@ export default function AdminLogin() {
       >
         <div className="p-8">
           <div className="mb-8 text-center">
-            <h1 className="text-2xl font-bold tracking-tight text-[#0F172A]">MATRIX</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-[#0F172A] flex items-center gap-2">
+              <img src="/logo.png" alt="Matrix Logo" className="w-8 h-8 object-contain" />
+              MATRIX
+            </h1>
             <p className="text-sm text-[#64748B] mt-1">Certification Platform</p>
             <div className="mt-4 inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-medium border border-blue-100">
               <ShieldAlert className="w-3.5 h-3.5" />

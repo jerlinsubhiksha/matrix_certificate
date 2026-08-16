@@ -157,7 +157,7 @@ export default function EventsPage() {
                   <div className="p-6 border-b border-border/50 relative z-10 bg-card">
                     <div className="pr-24">
                       <h3 className="font-extrabold text-xl mb-2 leading-tight text-foreground transition-all duration-300 line-clamp-2">
-                        <Link href={`/events/${event.id}`} className="transition-colors hover:text-accent">{event.name}</Link>
+                        <Link href={`/coordinator/events/${event.id}`} className="transition-colors hover:text-accent">{event.name}</Link>
                       </h3>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
                         <CalendarDays className="w-4 h-4 text-accent/70" />
@@ -192,7 +192,7 @@ export default function EventsPage() {
                   </div>
                   <div className="bg-muted/10 px-6 py-4 border-t border-border text-xs flex justify-between items-center relative z-10 gap-4">
                     <span className="text-muted-foreground font-medium truncate">By <span className="font-bold text-foreground">{event.coordinator}</span></span>
-                    <Link href={`/events/${event.id}`} className="font-bold text-accent hover:text-accent/80 transition-colors whitespace-nowrap">View Details &rarr;</Link>
+                    <Link href={`/coordinator/events/${event.id}`} className="font-bold text-accent hover:text-accent/80 transition-colors whitespace-nowrap">View Details &rarr;</Link>
                   </div>
                 </motion.div>
               ))}
@@ -213,7 +213,7 @@ export default function EventsPage() {
                 </thead>
                 <tbody className="text-sm divide-y divide-border/20">
                   {filteredEvents.map(event => (
-                    <tr key={event.id} className="hover:bg-muted/10 transition-colors group cursor-pointer" onClick={() => window.location.href = `/events/${event.id}`}>
+                    <tr key={event.id} className="hover:bg-muted/10 transition-colors group cursor-pointer" onClick={() => window.location.href = `/coordinator/events/${event.id}`}>
                       <td className="px-8 py-5 font-bold text-foreground group-hover:text-accent group-hover:drop-shadow-[0_0_8px_rgba(59,130,246,0.5)] transition-all">
                         {event.name}
                       </td>

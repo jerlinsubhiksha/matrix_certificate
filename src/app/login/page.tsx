@@ -15,14 +15,18 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
-  const { currentUser, loading } = useAuth();
+  const { currentUser, loading, role } = useAuth();
 
   // Redirect if already logged in
   useEffect(() => {
-    if (currentUser && !loading) {
-      router.push("/dashboard");
+    if (currentUser && !loading && role) {
+      if (role.toLowerCase() === 'admin') {
+        router.push("/dashboard");
+      } else {
+        router.push("/coordinator/dashboard");
+      }
     }
-  }, [currentUser, loading, router]);
+  }, [currentUser, loading, role, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,12 +39,12 @@ export default function LoginPage() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       toast.success("Login successful!");
-      router.push("/dashboard");
+      // Note: We don't push immediately here because we need to wait for AuthContext to fetch the role.
+      // The useEffect above will handle the redirect once the role is loaded!
     } catch (error: any) {
       console.error(error);
       toast.error(error.message || "Failed to login. Please check credentials.");
-    } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false); // Only reset if failed, so the button stays spinning while redirecting
     }
   };
 
@@ -66,7 +70,10 @@ export default function LoginPage() {
               M
             </div>
             <div className="flex flex-col leading-none">
-              <span className="font-bold text-2xl tracking-tight text-primary">MATRIX</span>
+              <span className="font-bold text-2xl tracking-tight text-primary flex items-center gap-2">
+                <img src="/logo.png" alt="Matrix Logo" className="w-8 h-8 object-contain" />
+                MATRIX
+              </span>
               <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">Certificate System</span>
             </div>
           </Link>
@@ -113,6 +120,11 @@ export default function LoginPage() {
               </button>
             </form>
             
+            <div className="mt-6 text-center">
+              <p className="text-sm text-muted-foreground">
+                First time logging in? <Link href="/setup" className="text-primary hover:underline font-medium">Set your password</Link>
+              </p>
+            </div>
           </div>
           
           <div className="mt-8 flex items-center justify-center gap-2 text-muted-foreground opacity-80">

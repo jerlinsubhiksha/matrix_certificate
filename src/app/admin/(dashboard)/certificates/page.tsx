@@ -106,7 +106,8 @@ export default function AdminCertificatesPage() {
                     </div>
                   </td>
                 </tr>
-              ))}
+                ))
+              )}
             </tbody>
           </table>
         </div>

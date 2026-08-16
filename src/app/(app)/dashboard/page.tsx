@@ -55,9 +55,27 @@ export default function DashboardPage() {
       className="flex flex-col gap-8 max-w-[1600px] mx-auto pb-10"
     >
       {/* Header */}
-      <motion.header variants={itemVariants} className="flex flex-col gap-1 border-b border-border/40 pb-6">
-        <h4 className="text-sm text-muted-foreground font-medium">Dashboard Overview</h4>
-        <h1 className="text-4xl font-extrabold tracking-tighter mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-pink-500 dark:from-blue-400 dark:to-pink-400 drop-shadow-sm dark:drop-shadow-[0_0_30px_rgba(236,72,153,0.7)]">Welcome back, Admin</h1>
+      <motion.header variants={itemVariants} className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-border/40 pb-6">
+        <div>
+          <h4 className="text-sm text-muted-foreground font-medium">Dashboard Overview</h4>
+          <h1 className="text-4xl font-extrabold tracking-tighter mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-pink-500 dark:from-blue-400 dark:to-pink-400 drop-shadow-sm dark:drop-shadow-[0_0_30px_rgba(236,72,153,0.7)]">Welcome back, Admin</h1>
+        </div>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/events"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-card border border-border rounded-xl text-sm font-semibold text-foreground hover:bg-accent/10 hover:text-accent hover:border-accent/30 transition-all shadow-sm"
+          >
+            <PlusCircle size={16} />
+            New Event
+          </Link>
+          <Link
+            href="/email-queue"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-primary rounded-xl text-sm font-semibold text-primary-foreground hover:opacity-90 transition-opacity shadow-sm"
+          >
+            <Send size={16} />
+            Resume Sending
+          </Link>
+        </div>
       </motion.header>
 
       {/* Statistics Row (6 Items) */}

@@ -60,7 +60,7 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
 
   const handleDelete = () => {
     // Mock delete logic
-    router.push("/events"); // redirect back to events list
+    router.push("/coordinator/events"); // redirect back to events list
   };
 
   const handleSaveEdit = (e: React.FormEvent) => {
