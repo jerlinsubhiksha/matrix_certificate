@@ -15,12 +15,11 @@ export function getDriveClient() {
     throw new Error("Missing Firebase Service Account credentials for Drive API.");
   }
 
-  const auth = new google.auth.JWT(
-    clientEmail,
-    null,
-    privateKey,
-    ['https://www.googleapis.com/auth/drive.file'] // Scoped to files created by the app
-  );
+  const auth = new google.auth.JWT({
+    email: clientEmail,
+    key: privateKey,
+    scopes: ['https://www.googleapis.com/auth/drive.file']
+  });
 
   return google.drive({ version: 'v3', auth });
 }

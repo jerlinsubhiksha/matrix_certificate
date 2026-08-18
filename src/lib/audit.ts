@@ -1,7 +1,7 @@
 import "server-only";
-import { adminDb } from "../firebase/admin";
+import { adminDb } from "@/lib/firebase/admin";
 import crypto from "crypto";
-import { requireAuthenticatedUser } from "../auth/permissions";
+import { verifySession } from "@/lib/auth/session";
 
 /**
  * Generate a cryptographically secure, unguessable certificate ID
@@ -19,8 +19,10 @@ export async function logAudit(params: {
   resourceId: string;
   metadata?: Record<string, any>;
 }) {
-  const user = await requireAuthenticatedUser();
+  const user = await verifySession();
   
+  if (!user) throw new Error("Unauthorized");
+
   const logRef = adminDb.collection("audit_logs").doc();
   await logRef.set({
     id: logRef.id,

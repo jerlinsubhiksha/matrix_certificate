@@ -24,7 +24,7 @@ const containerVariants = {
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+  show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 300, damping: 24 } }
 };
 
 export default function AnalyticsPage() {
@@ -41,6 +41,29 @@ export default function AnalyticsPage() {
   const bouncedEmails = emailJobs.filter(j => j.status === 'Failed').length;
   const deliveryRate = totalEmails > 0 ? ((deliveredEmails / totalEmails) * 100).toFixed(1) : "0.0";
   const donutPercentage = totalEmails > 0 ? (deliveredEmails / totalEmails) * 100 : 0;
+
+  // Calculate the last 6 months' data from real emailJobs
+  const months: string[] = [];
+  const chartData: number[] = [];
+  const today = new Date();
+  
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+    const monthName = d.toLocaleString('default', { month: 'short' });
+    months.push(monthName);
+    
+    const count = emailJobs.filter(job => {
+      if (job.status !== 'Completed') return false;
+      const jobDate = new Date(job.timestamp || new Date().toISOString());
+      return jobDate.getMonth() === d.getMonth() && jobDate.getFullYear() === d.getFullYear();
+    }).length;
+    
+    chartData.push(count);
+  }
+
+  // Calculate heights for the bars relative to the maximum count (minimum 1 to avoid NaN)
+  const maxCount = Math.max(...chartData, 1);
+  const heights = chartData.map(count => (count / maxCount) * 100);
 
   if (!mounted) return null;
 
@@ -105,21 +128,21 @@ export default function AnalyticsPage() {
             </div>
             
             {/* Bars */}
-            {[40, 65, 45, 80, 55, 95].map((height, i) => (
+            {heights.map((height, i) => (
               <div key={i} className="w-full relative group h-full flex items-end justify-center">
                 <motion.div 
                   initial={{ height: 0 }}
                   whileInView={{ height: `${height}%` }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.8, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] }}
-                  className="w-4/5 bg-accent/80 rounded-t-lg relative"
+                  className="w-4/5 bg-accent/80 rounded-t-lg relative min-h-[4px]"
                 >
                   <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-foreground text-background text-xs font-bold px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                    {height * 12}
+                    {chartData[i]}
                   </div>
                 </motion.div>
                 <div className="absolute -bottom-6 text-xs text-muted-foreground font-medium">
-                  {['Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'][i]}
+                  {months[i]}
                 </div>
               </div>
             ))}

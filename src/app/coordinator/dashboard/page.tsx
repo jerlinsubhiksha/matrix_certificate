@@ -7,7 +7,7 @@ import { useStore } from "@/lib/store";
 import Link from "next/link";
 
 export default function CoordinatorDashboard() {
-  const { user } = useStore();
+  const { user, activityLogs } = useStore();
   const [stats, setStats] = useState({
     totalEvents: 0,
     inProgressEvents: 0,
@@ -150,27 +150,35 @@ export default function CoordinatorDashboard() {
       <div className="grid-2">
         <div className="panel">
           <div className="panel-head">
-            <h3>Recent Pipeline Activity</h3>
+            <h3><span style={{ color: '#c9b5ff', marginRight: '8px', fontSize: '18px' }}>∿</span>Recent Activity</h3>
             <span className="see-all">View Logs</span>
           </div>
-          {recentEvents.length > 0 ? (
+          {activityLogs && activityLogs.length > 0 ? (
             <div className="stepper">
-              <div className="step">
-                <div className="step-dot done">✓</div>
-                <div className="step-body">
-                  <b>{recentEvents[0]?.name || "Event created"}</b><span>Template &amp; email content set</span>
-                </div>
-              </div>
-              <div className="step">
-                <div className="step-dot current">2</div>
-                <div className="step-body">
-                  <b>Pending Uploads</b><span>Awaiting participant list</span>
-                </div>
-              </div>
+              {activityLogs.filter((log: any) => log.userEmail === user?.email || log.userEmail === 'alice@matrix.com').slice(0, 5).map((log: any, idx: number) => {
+                const date = new Date(log.timestamp);
+                const now = new Date();
+                const diff = Math.floor((now.getTime() - date.getTime()) / 1000);
+                let timeAgo = 'Just now';
+                if (diff > 60) timeAgo = `${Math.floor(diff / 60)} minutes ago`;
+                if (diff > 3600) timeAgo = `${Math.floor(diff / 3600)} hours ago`;
+                if (diff > 86400) timeAgo = diff > 172800 ? `${Math.floor(diff / 86400)} days ago` : 'Yesterday';
+
+                return (
+                  <div className="step" key={log.id}>
+                    <div className="step-dot current"></div>
+                    <div className="step-body">
+                      <b>{log.action}</b>
+                      <span suppressHydrationWarning={true}>{timeAgo}</span>
+                      <span style={{ display: 'block', marginTop: '4px' }}>{log.description}</span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <div style={{ padding: '20px', color: '#635c7f', textAlign: 'center' }}>
-              No active pipelines. Create an event to get started.
+              No recent activity found.
             </div>
           )}
         </div>

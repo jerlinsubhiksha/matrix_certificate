@@ -111,7 +111,7 @@ export default function CertificatesGeneratePage() {
               <div className="bg-accent/5 border border-accent/20 rounded-xl p-4 flex items-center justify-between mt-4">
                 <div className="flex items-center gap-3">
                   <Settings className="w-5 h-5 text-accent" />
-                  <span className="text-sm font-medium">Using Default Variables: <span className="font-mono text-xs bg-background/50 px-2 py-1 rounded">{{Name}}</span>, <span className="font-mono text-xs bg-background/50 px-2 py-1 rounded">{{Course}}</span></span>
+                  <span className="text-sm font-medium">Using Default Variables: <span className="font-mono text-xs bg-background/50 px-2 py-1 rounded">{"{{Name}}"}</span>, <span className="font-mono text-xs bg-background/50 px-2 py-1 rounded">{"{{Course}}"}</span></span>
                 </div>
                 <button className="text-xs font-bold text-accent hover:underline">Edit Mapping</button>
               </div>

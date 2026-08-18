@@ -10,10 +10,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing idToken" }, { status: 400 });
     }
 
-    const { uid } = await createSessionCookie(idToken);
-    return NextResponse.json({ success: true, uid }, { status: 200 });
-  } catch (error) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const { uid, role } = await createSessionCookie(idToken);
+    return NextResponse.json({ success: true, uid, role }, { status: 200 });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message || "Unauthorized" }, { status: 401 });
   }
 }
 

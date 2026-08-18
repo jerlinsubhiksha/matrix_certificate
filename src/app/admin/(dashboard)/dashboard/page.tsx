@@ -7,6 +7,17 @@ import clsx from "clsx";
 import { collection, getCountFromServer } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { useStore } from "@/lib/store";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+
+const chartData = [
+  { name: 'Mon', certs: 400 },
+  { name: 'Tue', certs: 300 },
+  { name: 'Wed', certs: 550 },
+  { name: 'Thu', certs: 450 },
+  { name: 'Fri', certs: 700 },
+  { name: 'Sat', certs: 150 },
+  { name: 'Sun', certs: 200 },
+];
 
 const STATS = [
   { label: "Certificates", value: "12,482", trend: "+12.4%", icon: Award, color: "blue" },
@@ -98,8 +109,25 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-white border border-[#E2E8F0] rounded-2xl p-6 shadow-[0_4px_20px_rgba(15,23,42,0.03)] h-96 flex flex-col">
           <h3 className="text-lg font-semibold text-[#0F172A] mb-4">Certificate Activity</h3>
-          <div className="flex-1 bg-gray-50/50 rounded-xl border border-gray-100 flex items-center justify-center">
-            <span className="text-[#64748B] text-sm">Chart Component Placeholder (Recharts)</span>
+          <div className="flex-1 bg-white rounded-xl flex items-center justify-center p-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorCerts" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.1}/>
+                    <stop offset="95%" stopColor="#4f46e5" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748B' }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748B' }} />
+                <Tooltip 
+                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(15,23,42,0.1)' }}
+                  cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }}
+                />
+                <Area type="monotone" dataKey="certs" stroke="#4f46e5" strokeWidth={2} fillOpacity={1} fill="url(#colorCerts)" />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
 

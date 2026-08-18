@@ -3,10 +3,10 @@ import { adminDb } from '@/lib/firebase/admin';
 
 export async function GET(
   request: Request,
-  { params }: { params: { jobId: string } }
+  { params }: { params: Promise<{ jobId: string }> }
 ) {
   try {
-    const { jobId } = params;
+    const { jobId } = await params;
 
     const jobDoc = await adminDb.collection('generationJobs').doc(jobId).get();
 

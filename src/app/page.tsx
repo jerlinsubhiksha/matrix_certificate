@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { AbstractBackground } from "@/components/ui/abstract-background";
 
 // Helper for smooth scrolling
 const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
@@ -46,9 +47,7 @@ const Navbar = () => {
       className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b border-border/50 px-6 py-4 flex items-center justify-between"
     >
       <Link href="/" className="flex items-center gap-2">
-        <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground dark:text-gray-900 font-bold">
-          M
-        </div>
+        <img src="/logo.png" alt="Matrix Logo" className="w-8 h-8 object-contain dark:invert rounded-lg" />
         <div className="flex flex-col leading-none">
           <span className="font-bold text-lg text-primary tracking-tight">MATRIX</span>
           <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">Certificate System</span>
@@ -85,50 +84,7 @@ const Navbar = () => {
   );
 };
 
-const AbstractBackground = () => {
-  const shouldReduceMotion = useReducedMotion();
-  
-  if (shouldReduceMotion) return null;
 
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none -z-10">
-      {/* Slow moving glow */}
-      <motion.div 
-        animate={{
-          scale: [1, 1.2, 1],
-          opacity: [0.3, 0.5, 0.3],
-        }}
-        transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-        className="absolute top-1/4 left-1/4 w-[50vw] h-[50vw] bg-accent/10 rounded-full blur-[100px]"
-      />
-      <motion.div 
-        animate={{
-          scale: [1, 1.3, 1],
-          opacity: [0.2, 0.4, 0.2],
-        }}
-        transition={{ duration: 20, repeat: Infinity, ease: "linear", delay: 2 }}
-        className="absolute bottom-1/4 right-1/4 w-[40vw] h-[40vw] bg-primary/10 rounded-full blur-[120px]"
-      />
-      
-      {/* Floating abstract elements */}
-      <motion.div
-        animate={{ y: [0, -20, 0], rotate: [0, 5, 0] }}
-        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute top-32 left-[15%] opacity-20 text-accent"
-      >
-        <Sparkles className="w-8 h-8" />
-      </motion.div>
-
-      <motion.div
-        animate={{ y: [0, -15, 0], rotate: [0, -10, 0] }}
-        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-        className="absolute bottom-1/3 right-[10%] opacity-20 text-primary"
-      >
-        <FileCheck className="w-12 h-12" />
-      </motion.div>
-    </div>
-  );
-};
 
 const Hero = () => {
   const shouldReduceMotion = useReducedMotion();
@@ -147,8 +103,7 @@ const Hero = () => {
   };
 
   return (
-    <section className="relative min-h-[90vh] flex items-center justify-center pt-24 pb-20 px-6 overflow-hidden">
-      <AbstractBackground />
+    <section className="relative min-h-[90vh] flex items-center justify-center pt-24 pb-20 px-6">
       
       <motion.div 
         variants={containerVariants}
@@ -414,9 +369,7 @@ const Footer = () => (
   <footer className="py-12 px-6 bg-background border-t border-border">
     <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
       <Link href="/" className="flex items-center gap-2">
-        <div className="w-6 h-6 rounded-md bg-primary flex items-center justify-center text-primary-foreground dark:text-gray-900 font-bold text-xs">
-          M
-        </div>
+        <img src="/logo.png" alt="Matrix Logo" className="w-6 h-6 object-contain dark:invert rounded-md" />
         <span className="font-bold text-lg text-primary tracking-tight">MATRIX</span>
       </Link>
       
@@ -438,7 +391,8 @@ const Footer = () => (
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen selection:bg-accent selection:text-white font-sans overflow-x-hidden">
+    <div className="min-h-screen selection:bg-accent selection:text-white font-sans overflow-x-hidden relative z-0">
+      <AbstractBackground />
       <Navbar />
       <Hero />
       <Features />

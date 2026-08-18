@@ -4,12 +4,11 @@ import { getFirestore } from 'firebase-admin/firestore';
 
 if (!getApps().length) {
   try {
-    const projectId = process.env.FIREBASE_PROJECT_ID || "your-firebase-project-id";
-    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL || "your-firebase-service-account-email";
-    const privateKey = (process.env.FIREBASE_PRIVATE_KEY || "").replace(/\\n/g, '\n');
+    const projectId = process.env.FIREBASE_PROJECT_ID;
+    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
     
-    // Only initialize if we have actual credentials, otherwise mock it for dev
-    if (projectId && clientEmail && privateKey && !privateKey.includes("your-firebase")) {
+    if (projectId && clientEmail && privateKey) {
       initializeApp({
         credential: cert({
           projectId,
@@ -18,7 +17,7 @@ if (!getApps().length) {
         }),
       });
     } else {
-      console.warn("Firebase Admin credentials missing or using placeholders. Firestore features will crash if called.");
+      console.warn("Firebase Admin credentials not found in environment. Firestore admin features will be unavailable.");
       // Initialize an empty app just to prevent 'length of undefined' crashes, but calls will fail
       initializeApp({ projectId: 'mock-project' });
     }

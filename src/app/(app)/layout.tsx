@@ -27,6 +27,8 @@ import {
 import { ThemeProvider } from "@/components/theme-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useStore } from "@/lib/store";
+import { collection, onSnapshot, query } from "firebase/firestore";
+import { db } from "@/lib/firebase/client";
 
 const SIDEBAR_NAV = [
   { title: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
@@ -42,7 +44,7 @@ const SIDEBAR_NAV = [
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { settings } = useStore();
+  const { settings, setEvents, setEmailJobs, events } = useStore();
   const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -53,6 +55,31 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     const timer = setTimeout(() => setIsLoading(false), 2000);
     return () => clearTimeout(timer);
   }, []);
+
+  React.useEffect(() => {
+    if (!db) return;
+
+    const unsubscribeEvents = onSnapshot(query(collection(db, "events")), (snapshot) => {
+      const fetchedEvents: any[] = [];
+      snapshot.forEach((doc) => {
+        fetchedEvents.push({ id: doc.id, ...doc.data() });
+      });
+      setEvents(fetchedEvents);
+    });
+
+    const unsubscribeQueue = onSnapshot(query(collection(db, "emailQueue")), (snapshot) => {
+      const fetchedJobs: any[] = [];
+      snapshot.forEach((doc) => {
+        fetchedJobs.push({ id: doc.id, ...doc.data() });
+      });
+      setEmailJobs(fetchedJobs);
+    });
+
+    return () => {
+      unsubscribeEvents();
+      unsubscribeQueue();
+    };
+  }, [setEvents, setEmailJobs]);
   const pathname = usePathname();
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -265,7 +292,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 {pathSegments.map((segment, index) => {
                   const href = `/${pathSegments.slice(0, index + 1).join('/')}`;
                   const isLast = index === pathSegments.length - 1;
-                  const formattedSegment = segment.charAt(0).toUpperCase() + segment.slice(1).replace('-', ' ');
+                  let formattedSegment = segment.charAt(0).toUpperCase() + segment.slice(1).replace('-', ' ');
+                  
+                  // Replace ugly Firebase IDs with actual Event names for a professional look
+                  if (segment.length > 15 && events) {
+                    const matchedEvent = events.find((e: any) => e.id === segment);
+                    if (matchedEvent) {
+                      formattedSegment = matchedEvent.name;
+                    }
+                  }
                   
                   return (
                     <React.Fragment key={href}>

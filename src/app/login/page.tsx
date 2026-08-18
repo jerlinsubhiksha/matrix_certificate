@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { auth } from "@/lib/firebase/client";
 import { useStore } from "@/lib/store";
+import { AbstractBackground } from "@/components/ui/abstract-background";
 import toast from "react-hot-toast";
 
 export default function LoginPage() {
@@ -18,16 +19,7 @@ export default function LoginPage() {
     setIsLoading(true);
 
     if (!auth) {
-      // DEV MODE BYPASS
-      toast.success("Dev Mode: Bypassing Google Auth since public keys are missing.");
-      setUser({
-        uid: "dev-admin-123",
-        email: "admin@matrix.local",
-        displayName: "Dev Admin",
-        photoURL: "",
-      });
-      document.cookie = "__session=true; path=/; max-age=3600";
-      router.push("/dashboard"); // Redirect to the general dashboard
+      toast.error("Firebase not initialized.");
       setIsLoading(false);
       return;
     }
@@ -35,18 +27,37 @@ export default function LoginPage() {
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
-      
       const user = result.user;
+      
+      const idToken = await user.getIdToken();
+
+      const res = await fetch("/api/auth/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Access Denied");
+      }
+
       setUser({
         uid: user.uid,
         email: user.email,
         displayName: user.displayName,
         photoURL: user.photoURL,
+        role: data.role
       });
       
-      toast.success("Successfully logged in!");
-      document.cookie = "__session=true; path=/; max-age=3600";
-      router.push("/dashboard");
+      toast.success(`Welcome back! Logged in as ${data.role}`);
+      
+      if (data.role === "ADMIN") {
+        router.push("/dashboard");
+      } else {
+        router.push("/coordinator/dashboard");
+      }
       
     } catch (error: any) {
       if (error.code === 'auth/popup-closed-by-user') {
@@ -61,16 +72,15 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
+    <div className="flex min-h-screen flex-col items-center justify-center p-4 relative z-0 bg-transparent">
+      <AbstractBackground />
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
         className="w-full max-w-[400px] flex flex-col items-center text-center"
       >
-        <div className="mb-8 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
-          <span className="text-2xl font-bold tracking-tighter">M</span>
-        </div>
+        <img src="/logo.png" alt="Matrix Logo" className="mb-8 h-16 w-16 object-contain dark:invert rounded-2xl" />
 
         <h1 className="mb-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
           Certificate management, simplified.

@@ -69,6 +69,14 @@ export interface AppSettings {
   logoUrl: string;
 }
 
+export interface ActivityLog {
+  id: string;
+  action: string;
+  timestamp: string;
+  description: string;
+  userEmail: string;
+}
+
 interface AppState {
   events: Event[];
   coordinators: Coordinator[];
@@ -77,8 +85,11 @@ interface AppState {
   emailsSent: number;
   emailJobs: EmailJob[];
   settings: AppSettings;
+  activityLogs: ActivityLog[];
   
   // Actions
+  setEvents: (events: Event[]) => void;
+  setEmailJobs: (jobs: EmailJob[]) => void;
   updateSettings: (updates: Partial<AppSettings>) => void;
   addEmailJob: (job: Omit<EmailJob, 'id'>) => string;
   updateEmailJob: (id: string, updates: Partial<EmailJob>) => void;
@@ -98,6 +109,8 @@ interface AppState {
 
   incrementCertificates: (count: number) => void;
   incrementEmails: (count: number) => void;
+
+  addActivityLog: (log: Omit<ActivityLog, 'id' | 'timestamp'>) => void;
 
   // Auth State
   user: { uid: string; email: string | null; displayName: string | null; photoURL: string | null } | null;
@@ -146,6 +159,18 @@ export const useStore = create<AppState>()(
         systemUpdates: true,
         logoUrl: "/logo.png"
       },
+      activityLogs: [
+        {
+          id: '1',
+          action: 'Logged in',
+          timestamp: new Date().toISOString(),
+          description: 'From IP 192.168.1.1 (Mac OS)',
+          userEmail: 'alice@matrix.com'
+        }
+      ],
+
+      setEvents: (events) => set({ events }),
+      setEmailJobs: (jobs) => set({ emailJobs: jobs }),
 
       updateSettings: (updates) => set((state) => ({
         settings: { ...state.settings, ...updates }
@@ -211,6 +236,10 @@ export const useStore = create<AppState>()(
       
       incrementEmails: (count) => set((state) => ({
         emailsSent: state.emailsSent + count
+      })),
+
+      addActivityLog: (log) => set((state) => ({
+        activityLogs: [{ ...log, id: Math.random().toString(36).substr(2, 9), timestamp: new Date().toISOString() }, ...state.activityLogs].slice(0, 50)
       })),
 
       user: null,

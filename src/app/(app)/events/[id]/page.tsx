@@ -3,8 +3,12 @@
 import React, { useState, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { doc, getDoc, collection, writeBatch, query, where, updateDoc, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase/client";
+import { useStore } from "@/lib/store";
+import * as XLSX from "xlsx";
 import { 
-  CalendarDays, 
+  CalendarDays,
   Users, 
   FileCheck, 
   Mail,
@@ -24,7 +28,6 @@ import {
   Clock3,
   Save
 } from "lucide-react";
-import { useStore } from "@/lib/store";
 
 const TABS = ["Overview", "Participants", "Certificates", "Email Queue", "Activity"];
 
@@ -39,6 +42,20 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const realEvent = events.find(e => e.id === id);
+
+  const [participants, setParticipants] = useState<any[]>([]);
+  const [uploading, setUploading] = useState(false);
+
+  React.useEffect(() => {
+    if (!db || !id) return;
+    const q = query(collection(db, "participants"), where("eventId", "==", id));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const pList: any[] = [];
+      snapshot.forEach(doc => pList.push({ id: doc.id, ...doc.data() }));
+      setParticipants(pList);
+    });
+    return () => unsubscribe();
+  }, [id]);
 
   const [editForm, setEditForm] = useState({
     name: realEvent?.name || "",
@@ -70,20 +87,13 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
   const sentEmails = eventEmails.filter(job => job.status === 'Completed').length;
   const failedEmails = eventEmails.filter(job => job.status === 'Failed').length;
 
-  // Group by unique emails to get accurate participant count, even if we dispatched to them multiple times
-  const uniqueParticipantsMap = new Map();
-  eventEmails.forEach(job => {
-    if (!uniqueParticipantsMap.has(job.participantEmail)) {
-      uniqueParticipantsMap.set(job.participantEmail, {
-        id: job.id,
-        name: job.participantName,
-        email: job.participantEmail,
-        status: job.status === 'Completed' ? 'Attended' : 'Registered',
-        date: new Date(job.timestamp).toLocaleDateString()
-      });
-    }
-  });
-  const PARTICIPANTS = Array.from(uniqueParticipantsMap.values());
+  const PARTICIPANTS = participants.map(p => ({
+    id: p.id,
+    name: p.name,
+    email: p.email,
+    status: p.status || 'Pending',
+    date: p.timestamp ? new Date(p.timestamp).toLocaleDateString() : new Date().toLocaleDateString()
+  }));
   const uniqueParticipantsCount = PARTICIPANTS.length;
 
   const eventDetails = {
@@ -128,6 +138,19 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
     color: eq.status === 'Completed' ? 'text-green-500' : 'text-red-500'
   })).reverse();
 
+  const sq = searchQuery.toLowerCase();
+  const filteredParticipants = PARTICIPANTS.filter(p => 
+    p.name?.toLowerCase().includes(sq) || p.email?.toLowerCase().includes(sq)
+  );
+  
+  const filteredCertificates = CERTIFICATES.filter(c => 
+    c.id.toLowerCase().includes(sq) || c.recipient?.toLowerCase().includes(sq)
+  );
+  
+  const filteredEmails = EMAIL_QUEUE.filter(e => 
+    e.recipient?.toLowerCase().includes(sq) || e.subject?.toLowerCase().includes(sq)
+  );
+
   const handleDelete = () => {
     deleteEvent(id);
     router.push("/"); 
@@ -141,6 +164,61 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
       status: editForm.status as any
     });
     setShowEditModal(false);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !db) return;
+
+    setUploading(true);
+    try {
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data);
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+      if (jsonData.length === 0) {
+        alert("The Excel file is empty.");
+        setUploading(false);
+        return;
+      }
+
+      const batch = writeBatch(db);
+      const pRef = collection(db, "participants");
+      let count = 0;
+
+      for (const row of jsonData as any[]) {
+        const name = row["Participant Name"] || row["Name"] || row["name"];
+        const email = row["Email Address"] || row["Email"] || row["email"];
+        
+        if (name && email) {
+          const newDocRef = doc(pRef);
+          batch.set(newDocRef, {
+            eventId: id,
+            name: name,
+            email: email,
+            status: "Pending",
+            timestamp: new Date().toISOString()
+          });
+          count++;
+        }
+      }
+
+      await batch.commit();
+      
+      const eventRef = doc(db, "events", id);
+      await updateDoc(eventRef, {
+        participantsCount: (realEvent?.participantsCount || 0) + count
+      });
+
+      alert(`Successfully uploaded ${count} participants.`);
+    } catch (error) {
+      console.error("Upload error", error);
+      alert("Failed to parse Excel file. Make sure it has 'Name' and 'Email' columns.");
+    } finally {
+      setUploading(false);
+      if (e.target) e.target.value = '';
+    }
   };
 
   return (
@@ -328,9 +406,16 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
                   <button className="flex items-center gap-2 px-3 py-2 bg-background border border-border/50 rounded-lg text-sm font-medium hover:bg-muted/50 transition-colors">
                     <Filter className="w-4 h-4" /> Filter
                   </button>
-                  <button className="flex items-center gap-2 px-3 py-2 bg-foreground text-background rounded-lg text-sm font-medium hover:opacity-90 transition-opacity">
-                    Add Participant
-                  </button>
+                  <label className="flex items-center gap-2 px-3 py-2 bg-foreground text-background rounded-lg text-sm font-medium hover:opacity-90 transition-opacity cursor-pointer">
+                    {uploading ? "Uploading..." : "Add Participant"}
+                    <input 
+                      type="file" 
+                      accept=".xlsx, .xls, .csv" 
+                      onChange={handleFileUpload} 
+                      style={{ display: "none" }} 
+                      disabled={uploading}
+                    />
+                  </label>
                 </div>
               </div>
               <div className="border border-border/40 rounded-xl overflow-hidden bg-background">
@@ -345,20 +430,20 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/20">
-                    {PARTICIPANTS.length === 0 ? (
+                    {filteredParticipants.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="py-16 text-center">
                           <div className="flex flex-col items-center justify-center">
                             <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
                               <Users className="w-8 h-8 text-muted-foreground/50" />
                             </div>
-                            <p className="font-semibold text-foreground/80 mb-1">No participants yet</p>
-                            <p className="text-sm text-muted-foreground max-w-sm">Add participants manually or import a CSV to get started.</p>
+                            <p className="font-semibold text-foreground/80 mb-1">No participants found</p>
+                            <p className="text-sm text-muted-foreground max-w-sm">Try adjusting your search query.</p>
                           </div>
                         </td>
                       </tr>
                     ) : (
-                      PARTICIPANTS.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase())).map(p => (
+                      filteredParticipants.map(p => (
                         <tr key={p.id} className="hover:bg-muted/10 transition-colors">
                           <td className="px-6 py-4 font-medium">{p.name}</td>
                           <td className="px-6 py-4 text-muted-foreground">{p.email}</td>
@@ -404,26 +489,18 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/20">
-                    {CERTIFICATES.length === 0 ? (
+                    {filteredCertificates.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="py-16 text-center">
-                          <div className="flex flex-col items-center justify-center">
-                            <div className="w-16 h-16 rounded-full bg-accent/5 flex items-center justify-center mb-4">
-                              <FileCheck className="w-8 h-8 text-accent/50" />
-                            </div>
-                            <p className="font-semibold text-foreground/80 mb-1">No certificates generated</p>
-                            <p className="text-sm text-muted-foreground max-w-sm">Click 'Generate Missing' to create certificates for your participants.</p>
-                          </div>
-                        </td>
+                        <td colSpan={5} className="py-16 text-center text-muted-foreground">No certificates found.</td>
                       </tr>
                     ) : (
-                      CERTIFICATES.map(c => (
-                        <tr key={c.id} className="hover:bg-muted/10 transition-colors">
-                          <td className="px-6 py-4 font-mono text-xs">{c.id}</td>
-                          <td className="px-6 py-4 font-medium">{c.recipient}</td>
-                          <td className="px-6 py-4 text-muted-foreground">{c.issueDate}</td>
+                      filteredCertificates.map(cert => (
+                        <tr key={cert.id} className="hover:bg-muted/10 transition-colors">
+                          <td className="px-6 py-4 font-mono text-xs">{cert.id}</td>
+                          <td className="px-6 py-4 font-medium">{cert.recipient}</td>
+                          <td className="px-6 py-4 text-muted-foreground">{cert.issueDate}</td>
                           <td className="px-6 py-4">
-                            <span className="px-2.5 py-1 bg-green-500/10 text-green-500 rounded-full text-xs font-semibold">{c.status}</span>
+                            <span className="px-2.5 py-1 bg-green-500/10 text-green-500 rounded-full text-xs font-semibold">{cert.status}</span>
                           </td>
                           <td className="px-6 py-4 text-right flex justify-end gap-2">
                             <button className="p-2 text-muted-foreground hover:text-accent hover:bg-accent/10 rounded-lg transition-colors"><Eye className="w-4 h-4"/></button>
@@ -461,20 +538,12 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/20">
-                    {EMAIL_QUEUE.length === 0 ? (
+                    {filteredEmails.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="py-16 text-center">
-                          <div className="flex flex-col items-center justify-center">
-                            <div className="w-16 h-16 rounded-full bg-blue-500/5 flex items-center justify-center mb-4">
-                              <Mail className="w-8 h-8 text-blue-500/50" />
-                            </div>
-                            <p className="font-semibold text-foreground/80 mb-1">Queue is empty</p>
-                            <p className="text-sm text-muted-foreground max-w-sm">No emails have been dispatched for this event yet.</p>
-                          </div>
-                        </td>
+                        <td colSpan={4} className="py-16 text-center text-muted-foreground">No emails found matching your search.</td>
                       </tr>
                     ) : (
-                      EMAIL_QUEUE.map(eq => (
+                      filteredEmails.map(eq => (
                         <tr key={eq.id} className="hover:bg-muted/10 transition-colors">
                           <td className="px-6 py-4 font-medium">{eq.recipient}</td>
                           <td className="px-6 py-4 text-muted-foreground truncate max-w-[200px]">{eq.subject}</td>
@@ -571,7 +640,7 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
                 <label className="text-sm font-semibold text-muted-foreground mb-1 block">Status</label>
                 <select 
                   value={editForm.status}
-                  onChange={e => setEditForm({...editForm, status: e.target.value})}
+                  onChange={e => setEditForm({...editForm, status: e.target.value as any})}
                   className="w-full px-4 py-2 bg-background border border-border/50 rounded-lg focus:border-accent focus:outline-none appearance-none"
                 >
                   <option value="Active">Active</option>

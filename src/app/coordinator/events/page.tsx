@@ -6,15 +6,17 @@ import { db } from "@/lib/firebase/client";
 import { useStore } from "@/lib/store";
 import Link from "next/link";
 
-export default function MyEventsPage() {
+export default function CoordinatorEventsPage() {
   const { user } = useStore();
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchEvents = async () => {
-      if (!db || !user?.email) return;
-
+      if (!db || !user?.email) {
+        if (user && !user.email) setLoading(false);
+        return;
+      }
       try {
         const eventsRef = collection(db, "events");
         const q = query(eventsRef, where("createdBy", "==", user.email));
@@ -24,7 +26,7 @@ export default function MyEventsPage() {
         querySnapshot.forEach((doc) => {
           eventsList.push({ id: doc.id, ...doc.data() });
         });
-
+        
         eventsList.sort((a, b) => new Date(b.createdDate || 0).getTime() - new Date(a.createdDate || 0).getTime());
         setEvents(eventsList);
       } catch (error) {
@@ -33,28 +35,26 @@ export default function MyEventsPage() {
         setLoading(false);
       }
     };
-
     fetchEvents();
   }, [user]);
 
   return (
     <>
       <div className="breadcrumb">Home &nbsp;›&nbsp; <b>My Events</b></div>
-      <div className="page-head" style={{ marginBottom: "2rem" }}>
+      <div className="page-head">
         <div>
-          <h1>My Events</h1>
-          <p style={{ color: "var(--text-dim)", marginTop: "0.5rem" }}>
-            Manage and monitor all your certificate pipelines.
-          </p>
+          <div className="eyebrow">Events Management</div>
+          <h1>All <span className="accent">Events</span></h1>
         </div>
         <div className="top-actions">
-          <Link href="/coordinator/events/new" className="pill-btn" style={{ textDecoration: 'none' }}>＋ New Event</Link>
+          <Link href="/coordinator/events/new" className="pill-btn primary" style={{ textDecoration: 'none' }}>＋ Create Event</Link>
         </div>
       </div>
 
       <div className="panel">
         <div className="panel-head">
-          <h3>All Events ({events.length})</h3>
+          <h3>Your Managed Events</h3>
+          <span className="see-all">Total: {events.length}</span>
         </div>
         <table>
           <thead>
@@ -70,7 +70,7 @@ export default function MyEventsPage() {
             {loading ? (
               <tr><td colSpan={5} style={{ textAlign: 'center', padding: '20px', color: '#635c7f' }}>Loading...</td></tr>
             ) : events.length === 0 ? (
-              <tr><td colSpan={5} style={{ textAlign: 'center', padding: '20px', color: '#635c7f' }}>No events found.</td></tr>
+              <tr><td colSpan={5} style={{ textAlign: 'center', padding: '20px', color: '#635c7f' }}>No events found. Create one to get started.</td></tr>
             ) : (
               events.map(event => (
                 <tr key={event.id}>

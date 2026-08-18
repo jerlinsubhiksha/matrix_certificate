@@ -2,10 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getFirestore } from "firebase-admin/firestore";
 import { sendEmail } from "@/lib/gmail";
 import { downloadFileFromDrive } from "@/lib/drive";
-import { initAdmin } from "@/lib/firebase/admin";
-
-// Initialize Firebase Admin
-initAdmin();
+import { adminAuth, adminDb } from "@/lib/firebase/admin";
 
 export async function POST(req: NextRequest) {
   try {
