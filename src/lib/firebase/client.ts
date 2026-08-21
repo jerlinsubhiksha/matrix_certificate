@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getAuth, Auth } from "firebase/auth";
+import { getFirestore, Firestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -13,7 +13,7 @@ const firebaseConfig = {
 
 // Initialize Firebase client side only if config is provided
 const app = getApps().length > 0 ? getApp() : (firebaseConfig.apiKey ? initializeApp(firebaseConfig) : null);
-const auth = app ? getAuth(app) : null as any;
-const db = app ? getFirestore(app) : null as any;
+const auth = app ? getAuth(app) : null as unknown as Auth;
+const db = app ? getFirestore(app) : null as unknown as Firestore;
 
 export { app, auth, db };

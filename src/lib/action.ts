@@ -33,13 +33,13 @@ export async function secureAction<TInput, TOutput>(
     const result = await actionLogic(parsedInput.data, user);
     
     return { success: true, data: result };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Server Action Error:", error);
     
     // Do not leak raw Firebase errors to the client
     let message = "Something went wrong. Please try again.";
     
-    if (error.message && (
+    if (error instanceof Error && error.message && (
       error.message.includes("FORBIDDEN") || 
       error.message.includes("NOT_FOUND") ||
       error.message.includes("UNAUTHENTICATED")

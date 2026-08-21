@@ -53,6 +53,7 @@ export interface EmailJob {
   participantEmail: string;
   status: QueueStatus;
   timestamp: string;
+  error?: string;
 }
 
 export interface AppSettings {
@@ -114,7 +115,7 @@ interface AppState {
 
   // Auth State
   user: { uid: string; email: string | null; displayName: string | null; photoURL: string | null } | null;
-  setUser: (user: any) => void;
+  setUser: (user: { uid: string; email: string | null; displayName: string | null; photoURL: string | null } | null) => void;
   clearUser: () => void;
 }
 

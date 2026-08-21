@@ -3,53 +3,52 @@ import { decodeJwt } from "jose";
 
 const SESSION_COOKIE_NAME = "__session";
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const session = request.cookies.get(SESSION_COOKIE_NAME)?.value;
+
   const url = request.nextUrl.clone();
   const { pathname } = request.nextUrl;
 
-  // Allow everyone to see the beautiful landing page!
-  if (pathname === "/") {
-    return NextResponse.next();
-  }
+  const protectedRoutes = [
+    "/dashboard", 
+    "/events", 
+    "/coordinators", 
+    "/participants", 
+    "/certificates", 
+    "/email-queue", 
+    "/analytics", 
+    "/logs", 
+    "/settings", 
+    "/profile",
+    "/coordinator"
+  ];
 
-  if (!session) {
+  const isProtected = protectedRoutes.some(route => pathname.startsWith(route));
+
+  if (isProtected && !session) {
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 
-  // If session exists, enforce role boundaries
-  try {
-    const decoded = decodeJwt(session);
-    const role = decoded.role as string | undefined;
+  if (session) {
+    try {
+      const payload = decodeJwt(session);
+      
+      const role = payload.role;
 
-    const isCoordinatorRoute = pathname.startsWith("/coordinator");
-    const isAdminRoute = !isCoordinatorRoute; // Everything else (e.g. /dashboard, /events, /certificates) is Admin
-
-    if (isCoordinatorRoute && role !== "COORDINATOR") {
-      // Admin trying to access Coordinator area -> kick back to Admin dashboard
-      if (role === "ADMIN") {
-        url.pathname = "/dashboard";
-        return NextResponse.redirect(url);
-      }
-      url.pathname = "/login";
-      return NextResponse.redirect(url);
-    }
-
-    if (isAdminRoute && role !== "ADMIN") {
-      // Coordinator trying to access Admin area -> kick back to Coordinator dashboard
-      if (role === "COORDINATOR") {
+      // Enforce strict boundaries
+      if (role === "COORDINATOR" && !pathname.startsWith("/coordinator") && isProtected) {
         url.pathname = "/coordinator/dashboard";
         return NextResponse.redirect(url);
       }
-      url.pathname = "/login";
-      return NextResponse.redirect(url);
-    }
 
-  } catch (error) {
-    console.error("Error decoding JWT in middleware", error);
-    url.pathname = "/login";
-    return NextResponse.redirect(url);
+      if (role === "ADMIN" && pathname.startsWith("/coordinator")) {
+        url.pathname = "/dashboard";
+        return NextResponse.redirect(url);
+      }
+    } catch (e) {
+      console.error("Middleware failed to decode session token", e);
+    }
   }
 
   return NextResponse.next();
@@ -57,14 +56,17 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - login (the login page itself)
-     */
-    '/((?!api|_next/static|_next/image|favicon.ico|logo.png|login).*)',
+    "/dashboard/:path*",
+    "/events/:path*",
+    "/coordinators/:path*",
+    "/participants/:path*",
+    "/certificates/:path*",
+    "/email-queue/:path*",
+    "/analytics/:path*",
+    "/logs/:path*",
+    "/settings/:path*",
+    "/profile/:path*",
+    "/coordinator/:path*",
+    "/login",
   ],
 };

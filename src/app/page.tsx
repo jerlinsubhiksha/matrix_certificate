@@ -16,6 +16,7 @@ import {
   Activity
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AbstractBackground } from "@/components/ui/abstract-background";
 
@@ -47,7 +48,7 @@ const Navbar = () => {
       className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b border-border/50 px-6 py-4 flex items-center justify-between"
     >
       <Link href="/" className="flex items-center gap-2">
-        <img src="/logo.png" alt="Matrix Logo" className="w-8 h-8 object-contain dark:invert rounded-lg" />
+        <Image src="/logo.png" alt="Matrix Logo" width={32} height={32} className="w-8 h-8 object-contain dark:invert rounded-lg" />
         <div className="flex flex-col leading-none">
           <span className="font-bold text-lg text-primary tracking-tight">MATRIX</span>
           <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">Certificate System</span>
@@ -369,7 +370,7 @@ const Footer = () => (
   <footer className="py-12 px-6 bg-background border-t border-border">
     <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
       <Link href="/" className="flex items-center gap-2">
-        <img src="/logo.png" alt="Matrix Logo" className="w-6 h-6 object-contain dark:invert rounded-md" />
+        <Image src="/logo.png" alt="Matrix Logo" width={24} height={24} className="w-6 h-6 object-contain dark:invert rounded-md" />
         <span className="font-bold text-lg text-primary tracking-tight">MATRIX</span>
       </Link>
       

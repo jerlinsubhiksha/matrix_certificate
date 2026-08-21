@@ -10,9 +10,9 @@ const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || "super-secret-key-for-local-dev-only"
 );
 
-// Hardcoded fallback admins for testing. The user will replace these.
-const FALLBACK_ADMINS = ["admin@matrix.local", "alice@matrix.com", "sudiksha@matrix.com", "sudikshas@karunya.edu.in"];
-const FALLBACK_COORDINATORS = ["sudikshasuresh127@gmail.com", "sudikshasuresh12@gmail.com"];
+// Hardcoded fallback ONLY for emergency local testing if Firebase is disconnected.
+const FALLBACK_ADMINS = ["admin@matrix.local"];
+const FALLBACK_COORDINATORS = ["coordinator@matrix.local"];
 
 export async function createSessionCookie(idToken: string) {
   try {
@@ -20,8 +20,8 @@ export async function createSessionCookie(idToken: string) {
     try {
       // In a real environment with keys, this verifies the Google login
       decodedToken = await adminAuth.verifyIdToken(idToken);
-    } catch (err: any) {
-      if (err.message?.includes("credential")) {
+    } catch (err: unknown) {
+      if (err instanceof Error && err.message?.includes("credential")) {
         console.warn("Dev mode: Bypassing real Firebase token verification due to missing admin credentials.");
         // We will trust the token as a JSON string for local dev if admin keys are missing
         decodedToken = JSON.parse(Buffer.from(idToken.split('.')[1], 'base64').toString());
@@ -34,32 +34,37 @@ export async function createSessionCookie(idToken: string) {
     const uid = decodedToken.uid;
     let role = "USER";
 
-    // 1. Check if ADMIN
-    const envAdmins = process.env.ADMIN_EMAILS ? process.env.ADMIN_EMAILS.split(',') : FALLBACK_ADMINS;
-    if (envAdmins.includes(email)) {
-      role = "ADMIN";
-    } else {
-      // 2. Check if COORDINATOR
-      if (FALLBACK_COORDINATORS.includes(email)) {
-        role = "COORDINATOR";
-      } else {
-        try {
-          if (adminDb) {
-             const coordsRef = adminDb.collection("coordinators");
-             const snapshot = await coordsRef.where("email", "==", email).get();
-             if (!snapshot.empty) {
-               role = "COORDINATOR";
-             }
+    console.log("Attempting login for email:", email);
+
+    // 1. Fetch from Firestore Users collection
+    if (adminDb) {
+      try {
+        const usersRef = adminDb.collection("users");
+        const snapshot = await usersRef.where("email", "==", email).get();
+        if (!snapshot.empty) {
+          const userData = snapshot.docs[0].data();
+          if (userData.role === "ADMIN" || userData.role === "COORDINATOR") {
+            role = userData.role;
           }
-        } catch (err) {
-          console.warn("Could not check Firestore for coordinator role, falling back to basic checks.", err);
         }
+      } catch (err) {
+        console.warn("Could not check Firestore for user role.", err);
+      }
+    }
+
+    // 2. Emergency Fallback (Only if not found in DB)
+    if (role === "USER") {
+      const envAdmins = process.env.ADMIN_EMAILS ? process.env.ADMIN_EMAILS.split(',') : FALLBACK_ADMINS;
+      if (envAdmins.includes(email)) {
+        role = "ADMIN";
+      } else if (FALLBACK_COORDINATORS.includes(email)) {
+        role = "COORDINATOR";
       }
     }
 
     // 3. Deny if neither
     if (role === "USER") {
-      throw new Error(`Access Denied: ${email} is not authorized.`);
+      throw new Error(`Access Denied: ${email} is not authorized in the Firestore users collection.`);
     }
 
     // 4. Create custom JWT

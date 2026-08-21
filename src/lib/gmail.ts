@@ -1,4 +1,5 @@
 import { google } from 'googleapis';
+import { Readable } from 'stream';
 
 /**
  * Initializes the Gmail API client using standard OAuth2.
@@ -41,7 +42,7 @@ export async function uploadToDrive(fileName: string, pdfBuffer: Buffer) {
   
   const media = {
     mimeType: 'application/pdf',
-    body: require('stream').Readable.from(pdfBuffer),
+    body: Readable.from(pdfBuffer),
   };
 
   const response = await drive.files.create({

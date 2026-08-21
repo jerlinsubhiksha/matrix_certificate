@@ -17,7 +17,7 @@ export async function logAudit(params: {
   action: string;
   resourceType: string;
   resourceId: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }) {
   const user = await verifySession();
   

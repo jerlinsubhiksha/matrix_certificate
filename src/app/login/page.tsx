@@ -13,9 +13,15 @@ export default function LoginPage() {
   const router = useRouter();
   const { setUser } = useStore();
   const [isLoading, setIsLoading] = React.useState(false);
+  const isAuthenticating = React.useRef(false);
+
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: "select_account" });
 
   const handleGoogleSignIn = async (e: React.MouseEvent) => {
     e.preventDefault();
+    if (isAuthenticating.current) return;
+    isAuthenticating.current = true;
     setIsLoading(true);
 
     if (!auth) {
@@ -25,7 +31,6 @@ export default function LoginPage() {
     }
     
     try {
-      const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
       
@@ -60,14 +65,15 @@ export default function LoginPage() {
       }
       
     } catch (error: any) {
-      if (error.code === 'auth/popup-closed-by-user') {
-        console.log('Sign-in popup closed by user');
+      if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+        console.log('Sign-in popup closed or cancelled by user');
       } else {
         console.error("Auth error:", error);
         toast.error(error.message || "Failed to log in.");
       }
     } finally {
       setIsLoading(false);
+      isAuthenticating.current = false;
     }
   };
 

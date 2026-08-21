@@ -27,8 +27,7 @@ import {
 import { ThemeProvider } from "@/components/theme-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useStore } from "@/lib/store";
-import { collection, onSnapshot, query } from "firebase/firestore";
-import { db } from "@/lib/firebase/client";
+import { useAuth } from "@/context/AuthContext";
 
 const SIDEBAR_NAV = [
   { title: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
@@ -45,41 +44,33 @@ const SIDEBAR_NAV = [
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { settings, setEvents, setEmailJobs, events } = useStore();
+  const { role, userProfile, logout: contextLogout } = useAuth();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/session', { method: 'DELETE' });
+      contextLogout();
+      router.push('/login');
+    } catch (e) {
+      console.error('Failed to logout', e);
+    }
+  };
+
   const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   
   React.useEffect(() => {
-    setMounted(true);
+    const mountTimer = setTimeout(() => setMounted(true), 0);
     const timer = setTimeout(() => setIsLoading(false), 2000);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(mountTimer);
+      clearTimeout(timer);
+    };
   }, []);
 
-  React.useEffect(() => {
-    if (!db) return;
-
-    const unsubscribeEvents = onSnapshot(query(collection(db, "events")), (snapshot) => {
-      const fetchedEvents: any[] = [];
-      snapshot.forEach((doc) => {
-        fetchedEvents.push({ id: doc.id, ...doc.data() });
-      });
-      setEvents(fetchedEvents);
-    });
-
-    const unsubscribeQueue = onSnapshot(query(collection(db, "emailQueue")), (snapshot) => {
-      const fetchedJobs: any[] = [];
-      snapshot.forEach((doc) => {
-        fetchedJobs.push({ id: doc.id, ...doc.data() });
-      });
-      setEmailJobs(fetchedJobs);
-    });
-
-    return () => {
-      unsubscribeEvents();
-      unsubscribeQueue();
-    };
-  }, [setEvents, setEmailJobs]);
   const pathname = usePathname();
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -89,8 +80,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     damping: 30,
     restDelta: 0.001
   });
-
-  const router = useRouter();
 
   React.useEffect(() => {
     if (!settings?.sessionTimeout || settings.sessionTimeout === 'never') return;
@@ -110,7 +99,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     // Check inactivity every minute
     const interval = setInterval(() => {
       if (Date.now() - lastActivity > timeoutMinutes * 60 * 1000) {
-        router.push('/login');
+        handleLogout();
       }
     }, 60000);
     
@@ -243,11 +232,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             })}
           </nav>
 
-          {/* Logout */}
           <div className="p-4 shrink-0">
-            <Link 
-              href="/login"
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-all group
+            <button 
+              onClick={handleLogout}
+              className={`flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-all group
                 ${collapsed && !mobileOpen ? 'justify-center px-0' : ''}
               `}
               title={collapsed ? "Logout" : undefined}
@@ -256,7 +244,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               {(!collapsed || mobileOpen) && (
                 <span className="text-sm font-semibold whitespace-nowrap">Logout</span>
               )}
-            </Link>
+            </button>
           </div>
         </aside>
 
@@ -340,7 +328,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                    <User className="w-4 h-4" />
                 </div>
                 <div className="hidden lg:flex flex-col">
-                  <span className="text-sm font-semibold leading-none">Admin</span>
+                  <span className="text-sm font-semibold leading-none">{userProfile?.name || 'User'}</span>
+                  <span className="text-xs text-muted-foreground capitalize">{role || 'Role'}</span>
                 </div>
               </Link>
             </div>

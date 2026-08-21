@@ -1,4 +1,4 @@
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { PDFDocument, rgb, StandardFonts, PDFFont } from 'pdf-lib';
 import fontkit from '@pdf-lib/fontkit';
 import { CertificateField } from './store';
 
@@ -13,7 +13,7 @@ export async function generateCertificatePdf(
 
   const fallbackFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
-  const embeddedFonts: Record<string, any> = {};
+  const embeddedFonts: Record<string, PDFFont> = {};
   for (const [fontName, fontBytes] of Object.entries(fonts)) {
     embeddedFonts[fontName] = await pdfDoc.embedFont(fontBytes);
   }

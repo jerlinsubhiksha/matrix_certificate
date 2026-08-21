@@ -1,4 +1,5 @@
 import { google } from 'googleapis';
+import { Readable } from 'stream';
 
 /**
  * Initializes the Google Drive API client.
@@ -39,7 +40,7 @@ export async function uploadPdfToDrive(
   const media = {
     mimeType: 'application/pdf',
     // Using a readable stream from the buffer
-    body: require('stream').Readable.from(pdfBuffer), 
+    body: Readable.from(pdfBuffer), 
   };
 
   const response = await drive.files.create({

@@ -1,6 +1,6 @@
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
-import { getFirestore } from 'firebase-admin/firestore';
+import { getAuth, Auth } from 'firebase-admin/auth';
+import { getFirestore, Firestore } from 'firebase-admin/firestore';
 
 if (!getApps().length) {
   try {
@@ -26,5 +26,5 @@ if (!getApps().length) {
   }
 }
 
-export const adminAuth = getApps().length ? getAuth() : null as any;
-export const adminDb = getApps().length ? getFirestore() : null as any;
+export const adminAuth = (getApps().length ? getAuth() : null) as unknown as Auth;
+export const adminDb = (getApps().length ? getFirestore() : null) as unknown as Firestore;
