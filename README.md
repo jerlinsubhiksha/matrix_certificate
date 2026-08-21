@@ -16,7 +16,7 @@ A modern, full-stack web application for coordinating events, managing participa
 
 ## 🛠️ Technology Stack
 
-- **Framework**: [Next.js 15](https://nextjs.org/) (App Router) & React 19
+- **Framework**: [Next.js 15](https://nextjs.org/) (App Router) 
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS & Framer Motion
 - **UI Components**: [shadcn/ui](https://ui.shadcn.com/) (Radix UI)
