@@ -89,6 +89,4 @@ Ensure you have the following installed:
 
 Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](https://github.com/sudikshas-byte/matrixcertificationwebapp/issues).
 
-## 📄 License
 
-This project is licensed under the [MIT License](LICENSE).
