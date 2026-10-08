@@ -27,7 +27,23 @@ export default function CoordinatorsPage() {
 
   // Hydration fix
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    setMounted(true);
+    const fetchCoordinators = async () => {
+      try {
+        const response = await fetch('/api/coordinators');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.coordinators) {
+             useStore.setState({ coordinators: data.coordinators });
+          }
+        }
+      } catch (e) {
+        console.error("Failed to fetch coordinators", e);
+      }
+    };
+    fetchCoordinators();
+  }, []);
 
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");

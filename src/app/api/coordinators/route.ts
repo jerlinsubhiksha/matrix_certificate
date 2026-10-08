@@ -57,6 +57,33 @@ export async function POST(request: Request) {
   }
 }
 
+export async function GET(request: Request) {
+  try {
+    // Only ADMIN can view all coordinators in this API
+    await verifySessionAndRole("ADMIN");
+
+    if (!adminDb) {
+      return NextResponse.json({ error: "Database not initialized" }, { status: 500 });
+    }
+
+    const usersRef = adminDb.collection("users");
+    const snapshot = await usersRef.where("role", "in", ["COORDINATOR", "ADMIN"]).get();
+    
+    const coordinators = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+    return NextResponse.json({ coordinators });
+  } catch (error: any) {
+    console.error("Error fetching coordinators:", error);
+    if (error.message?.includes("UNAUTHORIZED") || error.message?.includes("UNAUTHENTICATED")) {
+       return NextResponse.json({ error: error.message }, { status: 401 });
+    }
+    return NextResponse.json({ error: "Failed to fetch coordinators" }, { status: 500 });
+  }
+}
+
 export async function DELETE(request: Request) {
   try {
     // Only ADMIN can delete coordinators

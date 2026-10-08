@@ -136,15 +136,7 @@ export const useStore = create<AppState>()(
           emailBody: 'Hi {Participant Name},\n\nThank you for attending Annual Tech Symposium. Attached is your certificate of participation.\n\nBest,\nThe MATRIX Team'
         }
       ],
-      coordinators: [
-        {
-          id: '1',
-          name: 'Alice Johnson',
-          email: 'alice@matrix.com',
-          role: 'Lead Coordinator',
-          status: 'Active'
-        }
-      ],
+      coordinators: [],
       participants: [],
       certificatesGenerated: 0,
       emailsSent: 0,
