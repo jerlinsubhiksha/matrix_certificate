@@ -108,13 +108,13 @@ export default function CertificatesPipelinePage() {
       const lines = text.split(/\r?\n/).filter(line => line.trim() !== "");
       if (lines.length < 2) return; 
 
-      const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
+      const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, '').toLowerCase());
       
       const parsed = lines.slice(1).map((line, index) => {
-        const values = line.split(",").map(v => v.trim());
+        const values = line.split(",").map(v => v.trim().replace(/^"|"$/g, '').trim());
         const participant: any = { id: `P-${index}` };
         headers.forEach((header, index) => {
-          if (header === 'name' || header === 'full name') participant.name = values[index];
+          if (header === 'name' || header === 'full name' || header === 'participant name') participant.name = values[index];
           if (header === 'email' || header === 'email address') participant.email = values[index];
         });
         return participant;
@@ -169,6 +169,7 @@ export default function CertificatesPipelinePage() {
         
         let sendStatus: 'Completed' | 'Failed' = 'Failed';
         try {
+          const { googleAccessToken } = useStore.getState();
           const emailRes = await fetch('/api/certificates/send-email', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -177,7 +178,8 @@ export default function CertificatesPipelinePage() {
               email: p.email,
               imageDataUrl: dataUrl,
               subject: selectedEvent?.emailSubject,
-              customBody: selectedEvent?.emailBody
+              customBody: selectedEvent?.emailBody,
+              googleAccessToken: googleAccessToken
             })
           });
 

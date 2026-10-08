@@ -32,9 +32,19 @@ export default function ProfilePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [profileData, setProfileData] = useState({
-    name: "John Administrator",
-    email: "admin@acmecorp.com"
+    name: user?.displayName || "User",
+    email: user?.email || ""
   });
+
+  // Keep it synced if user updates
+  useEffect(() => {
+    if (user) {
+      setProfileData({
+        name: user.displayName || "User",
+        email: user.email || ""
+      });
+    }
+  }, [user]);
 
   const [passwordForm, setPasswordForm] = useState({
     current: "",
@@ -116,8 +126,8 @@ export default function ProfilePage() {
             <h1 className="text-4xl font-extrabold tracking-tighter mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-pink-500 dark:from-blue-400 dark:to-pink-400 drop-shadow-sm dark:drop-shadow-[0_0_30px_rgba(236,72,153,0.7)]">
               {profileData.name}
             </h1>
-            <p className="text-muted-foreground font-medium flex items-center gap-1.5 mt-1">
-              <ShieldCheck className="w-4 h-4 text-green-500" /> Super Admin
+            <p className="text-muted-foreground font-medium flex items-center gap-1.5 mt-1 capitalize">
+              <ShieldCheck className="w-4 h-4 text-green-500" /> {user?.role || 'User'}
             </p>
           </div>
         </div>

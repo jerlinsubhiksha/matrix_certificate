@@ -4,7 +4,7 @@ import { PDFDocument } from 'pdf-lib';
 
 export async function POST(request: Request) {
   try {
-    const { name, email, imageDataUrl, subject, customBody } = await request.json();
+    const { name, email, imageDataUrl, subject, customBody, googleAccessToken } = await request.json();
 
     if (!email || !imageDataUrl) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -31,12 +31,13 @@ export async function POST(request: Request) {
     let finalBody = customBody || `Hi ${name},\n\nCongratulations! Please find your official MATRIX certificate attached.\n\nBest regards,\nThe MATRIX Team`;
     finalBody = finalBody.replace(/{Participant Name}/g, name);
     
-    await sendEmail(email, finalSubject, finalBody, pdfBuffer, filename);
+    console.log("Sending email to:", email, "Subject:", finalSubject);
+    await sendEmail(email, finalSubject, finalBody, pdfBuffer, filename, googleAccessToken);
 
     // Also push to Google Drive!
     let driveLink = null;
     try {
-      const driveResponse = await uploadToDrive(filename, pdfBuffer);
+      const driveResponse = await uploadToDrive(filename, pdfBuffer, googleAccessToken);
       driveLink = driveResponse.webViewLink;
     } catch (driveErr: any) {
       console.error("Drive upload failed. You may need to generate a new OAuth Token that includes Drive API scopes.", driveErr.message);

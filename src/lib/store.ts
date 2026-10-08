@@ -114,8 +114,10 @@ interface AppState {
   addActivityLog: (log: Omit<ActivityLog, 'id' | 'timestamp'>) => void;
 
   // Auth State
-  user: { uid: string; email: string | null; displayName: string | null; photoURL: string | null } | null;
-  setUser: (user: { uid: string; email: string | null; displayName: string | null; photoURL: string | null } | null) => void;
+  user: { uid: string; email: string | null; displayName: string | null; photoURL: string | null; role?: string | null } | null;
+  googleAccessToken?: string | null;
+  setUser: (user: { uid: string; email: string | null; displayName: string | null; photoURL: string | null; role?: string | null } | null) => void;
+  setGoogleAccessToken: (token: string | null) => void;
   clearUser: () => void;
 }
 
@@ -244,8 +246,10 @@ export const useStore = create<AppState>()(
       })),
 
       user: null,
+      googleAccessToken: null,
       setUser: (user) => set({ user }),
-      clearUser: () => set({ user: null })
+      setGoogleAccessToken: (token) => set({ googleAccessToken: token }),
+      clearUser: () => set({ user: null, googleAccessToken: null })
     }),
     {
       name: 'matrix-storage', // unique name

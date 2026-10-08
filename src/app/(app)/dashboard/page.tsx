@@ -21,7 +21,7 @@ import {
 import { useStore } from "@/lib/store";
 
 export default function DashboardPage() {
-  const { events, coordinators, emailJobs } = useStore();
+  const { events, coordinators, emailJobs, user } = useStore();
   
   // Hydration fix for zustand persist
   const [mounted, setMounted] = useState(false);
@@ -59,7 +59,7 @@ export default function DashboardPage() {
       {/* Header */}
       <motion.header variants={itemVariants} className="flex flex-col gap-1 border-b border-border/40 pb-6">
         <h4 className="text-sm text-muted-foreground font-medium">Dashboard Overview</h4>
-        <h1 className="text-4xl font-extrabold tracking-tighter mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-pink-500 dark:from-blue-400 dark:to-pink-400 drop-shadow-sm dark:drop-shadow-[0_0_30px_rgba(236,72,153,0.7)]">Welcome back, Admin</h1>
+        <h1 className="text-4xl font-extrabold tracking-tighter mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-pink-500 dark:from-blue-400 dark:to-pink-400 drop-shadow-sm dark:drop-shadow-[0_0_30px_rgba(236,72,153,0.7)]">Welcome back, {user?.displayName || 'User'}</h1>
       </motion.header>
 
       {/* Statistics Row (6 Items) */}

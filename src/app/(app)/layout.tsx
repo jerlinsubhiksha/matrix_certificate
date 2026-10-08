@@ -43,7 +43,7 @@ const SIDEBAR_NAV = [
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { settings, setEvents, setEmailJobs, events } = useStore();
+  const { settings, setEvents, setEmailJobs, events, user } = useStore();
   const { role, userProfile, logout: contextLogout } = useAuth();
   const router = useRouter();
 
@@ -328,8 +328,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                    <User className="w-4 h-4" />
                 </div>
                 <div className="hidden lg:flex flex-col">
-                  <span className="text-sm font-semibold leading-none">{userProfile?.name || 'User'}</span>
-                  <span className="text-xs text-muted-foreground capitalize">{role || 'Role'}</span>
+                  <span className="text-sm font-semibold leading-none">{user?.displayName || userProfile?.name || 'User'}</span>
+                  <span className="text-xs text-muted-foreground capitalize">{user?.role || role || 'Role'}</span>
                 </div>
               </Link>
             </div>

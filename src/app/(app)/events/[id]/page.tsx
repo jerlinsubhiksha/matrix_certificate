@@ -188,10 +188,14 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
       let count = 0;
 
       for (const row of jsonData as any[]) {
-        const name = row["Participant Name"] || row["Name"] || row["name"];
-        const email = row["Email Address"] || row["Email"] || row["email"];
+        let name = row["Participant Name"] || row["Name"] || row["name"];
+        let email = row["Email Address"] || row["Email"] || row["email"];
         
         if (name && email) {
+          // Strip double quotes and whitespace
+          name = String(name).replace(/^"|"$/g, '').trim();
+          email = String(email).replace(/^"|"$/g, '').trim();
+          
           const newDocRef = doc(pRef);
           batch.set(newDocRef, {
             eventId: id,

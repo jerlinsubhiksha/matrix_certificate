@@ -43,8 +43,9 @@ export async function createSessionCookie(idToken: string) {
         const snapshot = await usersRef.where("email", "==", email).get();
         if (!snapshot.empty) {
           const userData = snapshot.docs[0].data();
-          if (userData.role === "ADMIN" || userData.role === "COORDINATOR") {
-            role = userData.role;
+          const dbRole = userData.role ? userData.role.toUpperCase() : "";
+          if (dbRole === "ADMIN" || dbRole === "COORDINATOR") {
+            role = dbRole;
           }
         }
       } catch (err) {
