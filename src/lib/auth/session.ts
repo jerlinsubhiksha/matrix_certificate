@@ -11,7 +11,7 @@ const JWT_SECRET = new TextEncoder().encode(
 );
 
 // Hardcoded fallback ONLY for emergency local testing if Firebase is disconnected.
-const FALLBACK_ADMINS = ["admin@matrix.local"];
+const FALLBACK_ADMINS = ["admin@matrix.local", "jerlinsubhiksha@gmail.com", "prathamaj@karunya.edu.in"];
 const FALLBACK_COORDINATORS = ["coordinator@matrix.local"];
 
 export async function createSessionCookie(idToken: string) {
