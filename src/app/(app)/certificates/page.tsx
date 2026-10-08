@@ -37,7 +37,8 @@ const FONT_OPTIONS = [
 ];
 
 export default function CertificatesPipelinePage() {
-  const { events, addEmailJob, incrementCertificates, incrementEmails, addParticipant } = useStore();
+  const { events, addEmailJob, incrementCertificates, incrementEmails, addParticipant, user } = useStore();
+  const basePath = user?.role === 'COORDINATOR' ? '/coordinator' : '';
   const [step, setStep] = useState(1);
   const [selectedEventId, setSelectedEventId] = useState("");
   
@@ -253,7 +254,7 @@ export default function CertificatesPipelinePage() {
                 {events.length === 0 ? (
                   <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center gap-3 text-amber-600">
                     <AlertCircle className="w-5 h-5" />
-                    <p className="text-sm font-medium">You need to create an event first. <Link href="/events" className="underline">Go to Events</Link></p>
+                    <p className="text-sm font-medium">You need to create an event first. <Link href={`${basePath}/events`} className="underline">Go to Events</Link></p>
                   </div>
                 ) : (
                   <select 

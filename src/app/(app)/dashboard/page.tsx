@@ -96,22 +96,24 @@ export default function DashboardPage() {
           <motion.section variants={itemVariants} className="bg-card/50 backdrop-blur-xl border border-border/50 rounded-xl p-6 shadow-sm">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-bold">Quick Actions</h2>
-              <span className="px-2 py-1 bg-muted text-[10px] uppercase font-bold tracking-wider text-muted-foreground rounded">Admin</span>
+              <span className="px-2 py-1 bg-muted text-[10px] uppercase font-bold tracking-wider text-muted-foreground rounded">{user?.role === 'COORDINATOR' ? 'Coordinator' : 'Admin'}</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Link href="/events" className="flex flex-col items-center justify-center p-6 bg-background/50 border border-border/50 hover:border-accent hover:bg-accent/5 rounded-xl transition-all group">
+              <Link href={user?.role === 'COORDINATOR' ? "/coordinator/events" : "/events"} className="flex flex-col items-center justify-center p-6 bg-background/50 border border-border/50 hover:border-accent hover:bg-accent/5 rounded-xl transition-all group">
                 <PlusCircle className="w-8 h-8 mb-3 text-muted-foreground group-hover:text-accent transition-colors" />
                 <span className="font-semibold text-sm">Create Event</span>
               </Link>
-              <Link href="/coordinators" className="flex flex-col items-center justify-center p-6 bg-background/50 border border-border/50 hover:border-indigo-500 hover:bg-indigo-500/5 rounded-xl transition-all group">
-                <Settings2 className="w-8 h-8 mb-3 text-muted-foreground group-hover:text-indigo-500 transition-colors" />
-                <span className="font-semibold text-sm">Manage Coordinators</span>
-              </Link>
-              <Link href="/certificates" className="flex flex-col items-center justify-center p-6 bg-background/50 border border-border/50 hover:border-blue-500 hover:bg-blue-500/5 rounded-xl transition-all group">
+              {user?.role !== 'COORDINATOR' && (
+                <Link href="/coordinators" className="flex flex-col items-center justify-center p-6 bg-background/50 border border-border/50 hover:border-indigo-500 hover:bg-indigo-500/5 rounded-xl transition-all group">
+                  <Settings2 className="w-8 h-8 mb-3 text-muted-foreground group-hover:text-indigo-500 transition-colors" />
+                  <span className="font-semibold text-sm">Manage Coordinators</span>
+                </Link>
+              )}
+              <Link href={user?.role === 'COORDINATOR' ? "/coordinator/certificates" : "/certificates"} className="flex flex-col items-center justify-center p-6 bg-background/50 border border-border/50 hover:border-blue-500 hover:bg-blue-500/5 rounded-xl transition-all group">
                 <FolderOpen className="w-8 h-8 mb-3 text-muted-foreground group-hover:text-blue-500 transition-colors" />
                 <span className="font-semibold text-sm">View Certificates</span>
               </Link>
-              <Link href="/email-queue" className="flex flex-col items-center justify-center p-6 bg-background/50 border border-border/50 hover:border-amber-500 hover:bg-amber-500/5 rounded-xl transition-all group">
+              <Link href={user?.role === 'COORDINATOR' ? "/coordinator/email-queue" : "/email-queue"} className="flex flex-col items-center justify-center p-6 bg-background/50 border border-border/50 hover:border-amber-500 hover:bg-amber-500/5 rounded-xl transition-all group">
                 <Send className="w-8 h-8 mb-3 text-muted-foreground group-hover:text-amber-500 transition-colors" />
                 <span className="font-semibold text-sm">View Email Queue</span>
               </Link>
@@ -161,7 +163,7 @@ export default function DashboardPage() {
                           </span>
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <Link href={`/events/${event.id}`} className="text-accent hover:underline text-xs font-medium">View</Link>
+                          <Link href={user?.role === 'COORDINATOR' ? `/coordinator/events/${event.id}` : `/events/${event.id}`} className="text-accent hover:underline text-xs font-medium">View</Link>
                         </td>
                       </tr>
                     ))

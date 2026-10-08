@@ -17,7 +17,8 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 
 export default function EmailQueuePage() {
-  const { emailJobs, events, clearEmailJobs } = useStore();
+  const { emailJobs, events, clearEmailJobs, user } = useStore();
+  const basePath = user?.role === 'COORDINATOR' ? '/coordinator' : '';
   const [mounted, setMounted] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<QueueStatus | 'All'>('All');
@@ -72,7 +73,7 @@ export default function EmailQueuePage() {
             <Trash2 className="w-4 h-4" /> Clear History
           </button>
           <Link 
-            href="/certificates"
+            href={`${basePath}/certificates`}
             className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:scale-105 active:scale-95 transition-all text-sm shadow-md"
           >
             <Mail className="w-4 h-4" /> New Dispatch

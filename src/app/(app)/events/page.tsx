@@ -19,7 +19,8 @@ import {
 import { useStore } from "@/lib/store";
 
 export default function EventsPage() {
-  const { events, addEvent } = useStore();
+  const { events, addEvent, user } = useStore();
+  const basePath = user?.role === 'COORDINATOR' ? '/coordinator' : '';
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -157,7 +158,7 @@ export default function EventsPage() {
                   <div className="p-6 border-b border-border/30 relative z-10">
                     <div className="pr-24">
                       <h3 className="font-extrabold text-xl mb-2 leading-tight group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-accent group-hover:to-blue-600 dark:group-hover:from-white dark:group-hover:to-accent transition-all duration-300 drop-shadow-sm group-hover:drop-shadow-[0_0_10px_rgba(59,130,246,0.5)] line-clamp-2">
-                        <Link href={`/events/${event.id}`} className="transition-colors">{event.name}</Link>
+                        <Link href={`${basePath}/events/${event.id}`} className="transition-colors">{event.name}</Link>
                       </h3>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground/80 font-medium">
                         <CalendarDays className="w-4 h-4 text-accent/70" />
@@ -192,7 +193,7 @@ export default function EventsPage() {
                   </div>
                   <div className="bg-background/50 px-6 py-4 border-t border-border/30 text-xs flex justify-between items-center relative z-10 backdrop-blur-md gap-4">
                     <span className="text-muted-foreground font-medium truncate">By <span className="font-bold text-foreground">{event.coordinator}</span></span>
-                    <Link href={`/events/${event.id}`} className="font-bold text-accent hover:text-white transition-colors group-hover:drop-shadow-[0_0_5px_rgba(59,130,246,0.8)] whitespace-nowrap">View Details &rarr;</Link>
+                    <Link href={`${basePath}/events/${event.id}`} className="font-bold text-accent hover:text-white transition-colors group-hover:drop-shadow-[0_0_5px_rgba(59,130,246,0.8)] whitespace-nowrap">View Details &rarr;</Link>
                   </div>
                 </motion.div>
               ))}
@@ -213,7 +214,7 @@ export default function EventsPage() {
                 </thead>
                 <tbody className="text-sm divide-y divide-border/20">
                   {filteredEvents.map(event => (
-                    <tr key={event.id} className="hover:bg-muted/10 transition-colors group cursor-pointer" onClick={() => window.location.href = `/events/${event.id}`}>
+                    <tr key={event.id} className="hover:bg-muted/10 transition-colors group cursor-pointer" onClick={() => window.location.href = `${basePath}/events/${event.id}`}>
                       <td className="px-8 py-5 font-bold text-foreground group-hover:text-accent group-hover:drop-shadow-[0_0_8px_rgba(59,130,246,0.5)] transition-all">
                         {event.name}
                       </td>
