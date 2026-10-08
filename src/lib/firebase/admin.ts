@@ -6,12 +6,22 @@ if (!getApps().length) {
   try {
     const projectId = process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'matrix-certification';
     const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-    let privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
-    if (privateKey && privateKey.startsWith('"') && privateKey.endsWith('"')) {
+    
+    // Extremely robust private key parsing for Vercel
+    let privateKey = process.env.FIREBASE_PRIVATE_KEY || '';
+    
+    // Remove surrounding quotes if they exist (Vercel sometimes adds them)
+    if (privateKey.startsWith('"') && privateKey.endsWith('"')) {
+      privateKey = privateKey.substring(1, privateKey.length - 1);
+    }
+    if (privateKey.startsWith("'") && privateKey.endsWith("'")) {
       privateKey = privateKey.substring(1, privateKey.length - 1);
     }
     
-    if (projectId && clientEmail && privateKey) {
+    // Replace literal '\n' strings with actual newline characters
+    privateKey = privateKey.replace(/\\n/g, '\n');
+
+    if (projectId && clientEmail && privateKey && privateKey.includes('BEGIN PRIVATE KEY')) {
       initializeApp({
         credential: cert({
           projectId,
@@ -19,15 +29,19 @@ if (!getApps().length) {
           privateKey,
         }),
       });
+      console.log("Firebase Admin initialized successfully.");
     } else {
-      console.warn("Firebase Admin credentials not found in environment. Firestore admin features will be unavailable.");
-      // Initialize an empty app just to prevent 'length of undefined' crashes, but calls will fail
+      console.warn("Firebase Admin credentials not found or invalid in environment. Initializing mock app.");
       initializeApp({ projectId: 'mock-project' });
     }
   } catch (error) {
-    console.error("Firebase admin initialization error", error);
+    console.error("Firebase admin initialization error:", error);
+    // Initialize mock to prevent total crash
+    if (!getApps().length) {
+      initializeApp({ projectId: 'mock-project' });
+    }
   }
 }
 
-export const adminAuth = (getApps().length ? getAuth() : null) as unknown as Auth;
-export const adminDb = (getApps().length ? getFirestore() : null) as unknown as Firestore;
+export const adminAuth = (getApps().length > 0 ? getAuth() : null) as unknown as Auth;
+export const adminDb = (getApps().length > 0 ? getFirestore() : null) as unknown as Firestore;

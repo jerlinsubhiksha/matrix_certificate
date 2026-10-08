@@ -24,8 +24,11 @@ export async function createSessionCookie(idToken: string) {
       if (err instanceof Error && err.message?.includes("credential")) {
         console.warn("Dev mode: Bypassing real Firebase token verification due to missing admin credentials.");
         // We will trust the token as a JSON string for local dev if admin keys are missing
-        decodedToken = JSON.parse(Buffer.from(idToken.split('.')[1], 'base64').toString());
+        const base64Url = idToken.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        decodedToken = JSON.parse(atob(base64));
       } else {
+
         throw err;
       }
     }
