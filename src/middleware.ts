@@ -37,12 +37,12 @@ export async function middleware(request: NextRequest) {
       const role = payload.role;
 
       // Enforce strict boundaries
-      if (role === "COORDINATOR" && !pathname.startsWith("/coordinator") && isProtected) {
+      if (role === "COORDINATOR" && !pathname.startsWith("/coordinator/") && isProtected) {
         url.pathname = "/coordinator/dashboard";
         return NextResponse.redirect(url);
       }
 
-      if (role === "ADMIN" && pathname.startsWith("/coordinator")) {
+      if (role === "ADMIN" && (pathname === "/coordinator" || pathname.startsWith("/coordinator/"))) {
         url.pathname = "/dashboard";
         return NextResponse.redirect(url);
       }
