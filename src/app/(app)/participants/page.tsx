@@ -394,7 +394,7 @@ export default function ParticipantsPage() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
               transition={{ type: "spring", damping: 25, stiffness: 400 }}
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
               className="w-full max-w-sm bg-card border border-border shadow-2xl rounded-3xl overflow-hidden flex flex-col relative"
             >
               {/* Decorative top border */}

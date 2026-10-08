@@ -49,9 +49,9 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
   React.useEffect(() => {
     if (!db || !id) return;
     const q = query(collection(db, "participants"), where("eventId", "==", id));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribe = onSnapshot(q, (snapshot: any) => {
       const pList: any[] = [];
-      snapshot.forEach(doc => pList.push({ id: doc.id, ...doc.data() }));
+      snapshot.forEach((doc: any) => pList.push({ id: doc.id, ...doc.data() }));
       setParticipants(pList);
     });
     return () => unsubscribe();

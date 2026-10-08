@@ -21,7 +21,7 @@ import {
 import { useStore } from "@/lib/store";
 
 export default function DashboardPage() {
-  const { events, coordinators, emailJobs, user, setCoordinators } = useStore((state) => ({ ...state, setCoordinators: state.setCoordinators || ((c) => console.log('Store missing setCoordinators')) }));
+  const { events, coordinators, emailJobs, user } = useStore();
   
   // Hydration fix for zustand persist
   const [mounted, setMounted] = useState(false);
