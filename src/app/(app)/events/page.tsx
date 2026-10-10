@@ -31,18 +31,33 @@ export default function EventsPage() {
 
   const [newEvent, setNewEvent] = useState({
     name: "",
-    coordinator: "Admin",
+    coordinator: user?.displayName || "Admin",
     date: "",
     status: "Draft" as const,
     participantsCount: 0
   });
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEvent.name || !newEvent.date) return;
-    addEvent(newEvent);
-    setIsModalOpen(false);
-    setNewEvent({ ...newEvent, name: "", date: "", participantsCount: 0 });
+    
+    try {
+      const { db } = await import('@/lib/firebase/client');
+      const { collection, addDoc } = await import('firebase/firestore');
+      
+      await addDoc(collection(db, "events"), {
+        ...newEvent,
+        coordinator: user?.displayName || user?.email || "Admin",
+        emailSubject: `Your Certificate for ${newEvent.name}`,
+        emailBody: `Hi {Participant Name},\n\nThank you for attending ${newEvent.name}. Attached is your certificate of participation.\n\nBest,\nThe MATRIX Team`
+      });
+      
+      setIsModalOpen(false);
+      setNewEvent({ ...newEvent, name: "", date: "", participantsCount: 0 });
+    } catch (err) {
+      console.error("Error creating event:", err);
+      alert("Failed to create event. Please try again.");
+    }
   };
 
   if (!mounted) return null;

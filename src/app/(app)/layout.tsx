@@ -28,6 +28,8 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/context/AuthContext";
+import { db } from "@/lib/firebase/client";
+import { collection, onSnapshot } from "firebase/firestore";
 
 const SIDEBAR_NAV = [
   { title: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
@@ -62,6 +64,26 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   
+  React.useEffect(() => {
+    if (!db) return;
+    const unsubscribeEvents = onSnapshot(collection(db, "events"), (snapshot) => {
+      const eList: any[] = [];
+      snapshot.forEach(doc => eList.push({ id: doc.id, ...doc.data() }));
+      setEvents(eList);
+    });
+
+    const unsubscribeCoordinators = onSnapshot(collection(db, "coordinators"), (snapshot) => {
+      const cList: any[] = [];
+      snapshot.forEach(doc => cList.push({ id: doc.id, ...doc.data() }));
+      useStore.setState({ coordinators: cList });
+    });
+
+    return () => {
+      unsubscribeEvents();
+      unsubscribeCoordinators();
+    };
+  }, [setEvents]);
+
   React.useEffect(() => {
     const mountTimer = setTimeout(() => setMounted(true), 0);
     const timer = setTimeout(() => setIsLoading(false), 2000);

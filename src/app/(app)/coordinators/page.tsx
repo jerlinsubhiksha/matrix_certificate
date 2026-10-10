@@ -17,7 +17,8 @@ import {
 import { useStore } from "@/lib/store";
 
 export default function CoordinatorsPage() {
-  const { coordinators, addCoordinator, updateCoordinator, deleteCoordinator } = useStore();
+  const { coordinators, addCoordinator, updateCoordinator, deleteCoordinator, user } = useStore();
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'admin';
   const [searchQuery, setSearchQuery] = useState("");
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   
@@ -25,24 +26,9 @@ export default function CoordinatorsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
-  // Hydration fix
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
-    const fetchCoordinators = async () => {
-      try {
-        const response = await fetch('/api/coordinators');
-        if (response.ok) {
-          const data = await response.json();
-          if (data.coordinators) {
-             useStore.setState({ coordinators: data.coordinators });
-          }
-        }
-      } catch (e) {
-        console.error("Failed to fetch coordinators", e);
-      }
-    };
-    fetchCoordinators();
   }, []);
 
   const [newName, setNewName] = useState("");
@@ -177,39 +163,41 @@ export default function CoordinatorsPage() {
         </div>
         
         {/* Quick Add Form */}
-        <form onSubmit={handleQuickAdd} className="flex flex-col sm:flex-row items-center gap-2">
-          <input 
-            type="text" 
-            placeholder="Coordinator Name" 
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            required
-            className="w-full sm:w-48 px-4 py-2.5 bg-card backdrop-blur-md border border-border/60 rounded-lg focus:outline-none focus:border-accent/50 transition-colors text-sm shadow-sm"
-          />
-          <input 
-            type="email" 
-            placeholder="Coordinator Email" 
-            value={newEmail}
-            onChange={(e) => setNewEmail(e.target.value)}
-            required
-            className="w-full sm:w-64 px-4 py-2.5 bg-card backdrop-blur-md border border-border/60 rounded-lg focus:outline-none focus:border-accent/50 transition-colors text-sm shadow-sm"
-          />
-          <button 
-            type="submit"
-            disabled={isAdding}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground font-semibold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
-            title="Add Coordinator"
-          >
-            {isAdding ? (
-              <span className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin"></span>
-            ) : (
-              <>
-                <UserPlus className="w-4 h-4" />
-                <span>Add</span>
-              </>
-            )}
-          </button>
-        </form>
+        {isAdmin && (
+          <form onSubmit={handleQuickAdd} className="flex flex-col sm:flex-row items-center gap-2">
+            <input 
+              type="text" 
+              placeholder="Coordinator Name" 
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              required
+              className="w-full sm:w-48 px-4 py-2.5 bg-card backdrop-blur-md border border-border/60 rounded-lg focus:outline-none focus:border-accent/50 transition-colors text-sm shadow-sm"
+            />
+            <input 
+              type="email" 
+              placeholder="Coordinator Email" 
+              value={newEmail}
+              onChange={(e) => setNewEmail(e.target.value)}
+              required
+              className="w-full sm:w-64 px-4 py-2.5 bg-card backdrop-blur-md border border-border/60 rounded-lg focus:outline-none focus:border-accent/50 transition-colors text-sm shadow-sm"
+            />
+            <button 
+              type="submit"
+              disabled={isAdding}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground font-semibold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+              title="Add Coordinator"
+            >
+              {isAdding ? (
+                <span className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin"></span>
+              ) : (
+                <>
+                  <UserPlus className="w-4 h-4" />
+                  <span>Add</span>
+                </>
+              )}
+            </button>
+          </form>
+        )}
       </header>
 
       {/* Action Bar (Only Search now) */}
@@ -239,7 +227,7 @@ export default function CoordinatorsPage() {
                 <th className="px-6 py-4 font-medium">Email</th>
                 <th className="px-6 py-4 font-medium">Role</th>
                 <th className="px-6 py-4 font-medium">Status</th>
-                <th className="px-6 py-4 font-medium text-right">Actions</th>
+                {isAdmin && <th className="px-6 py-4 font-medium text-right">Actions</th>}
               </tr>
             </thead>
             <tbody className="text-sm divide-y divide-border/40">
@@ -264,7 +252,7 @@ export default function CoordinatorsPage() {
                         {coord?.status || 'Unknown'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right relative">
+                    {isAdmin && (<td className="px-6 py-4 text-right relative">
                       <button 
                         onClick={() => setActiveDropdown(activeDropdown === coord?.id ? null : coord?.id)}
                         className="p-1.5 rounded-md hover:bg-muted text-muted-foreground transition-colors"
@@ -315,12 +303,12 @@ export default function CoordinatorsPage() {
                           </>
                         )}
                       </AnimatePresence>
-                    </td>
+                    </td>)}
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="py-20 text-center text-muted-foreground">
+                  <td colSpan={isAdmin ? 5 : 4} className="py-20 text-center text-muted-foreground">
                     <div className="flex flex-col items-center justify-center">
                       <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
                         <UsersRound className="w-6 h-6 text-muted-foreground/50" />

@@ -188,8 +188,21 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
       let count = 0;
 
       for (const row of jsonData as any[]) {
-        let name = row["Participant Name"] || row["Name"] || row["name"];
-        let email = row["Email Address"] || row["Email"] || row["email"];
+        const keys = Object.keys(row);
+        
+        // Find keys case-insensitively and ignoring spaces
+        const nameKey = keys.find(k => {
+          const norm = k.toLowerCase().replace(/[\s_]/g, '');
+          return norm === 'name' || norm === 'participantname' || norm === 'firstname' || norm === 'fullname';
+        });
+        
+        const emailKey = keys.find(k => {
+          const norm = k.toLowerCase().replace(/[\s_]/g, '');
+          return norm === 'email' || norm === 'emailaddress';
+        });
+        
+        let name = nameKey ? row[nameKey] : undefined;
+        let email = emailKey ? row[emailKey] : undefined;
         
         if (name && email) {
           // Strip double quotes and whitespace
@@ -414,7 +427,7 @@ export default function EventDetailsPage({ params }: { params: Promise<{ id: str
                     {uploading ? "Uploading..." : "Add Participant"}
                     <input 
                       type="file" 
-                      accept=".xlsx, .xls, .csv" 
+                      accept=".xlsx, .xls, .csv, text/csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" 
                       onChange={handleFileUpload} 
                       style={{ display: "none" }} 
                       disabled={uploading}

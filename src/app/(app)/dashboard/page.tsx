@@ -23,25 +23,9 @@ import { useStore } from "@/lib/store";
 export default function DashboardPage() {
   const { events, coordinators, emailJobs, user } = useStore();
   
-  // Hydration fix for zustand persist
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
-    // Fetch real coordinators
-    const fetchCoordinators = async () => {
-      try {
-        const response = await fetch('/api/coordinators');
-        if (response.ok) {
-          const data = await response.json();
-          if (data.coordinators) {
-             useStore.setState({ coordinators: data.coordinators });
-          }
-        }
-      } catch (e) {
-        console.error("Failed to fetch coordinators", e);
-      }
-    };
-    fetchCoordinators();
   }, []);
 
   if (!mounted) return null; // Avoid hydration mismatch

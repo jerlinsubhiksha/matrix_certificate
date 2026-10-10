@@ -124,18 +124,7 @@ interface AppState {
 export const useStore = create<AppState>()(
   persist(
     (set) => ({
-      events: [
-        {
-          id: '1',
-          name: 'Annual Tech Symposium',
-          coordinator: 'Alice Johnson',
-          date: '2026-09-15',
-          status: 'Active',
-          participantsCount: 150,
-          emailSubject: 'Your Certificate for Annual Tech Symposium',
-          emailBody: 'Hi {Participant Name},\n\nThank you for attending Annual Tech Symposium. Attached is your certificate of participation.\n\nBest,\nThe MATRIX Team'
-        }
-      ],
+      events: [],
       coordinators: [],
       participants: [],
       certificatesGenerated: 0,
