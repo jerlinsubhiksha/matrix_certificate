@@ -66,21 +66,32 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   
   React.useEffect(() => {
     if (!db) return;
+    setEvents([]); // Clear any persisted dummy events from localStorage
+    
     const unsubscribeEvents = onSnapshot(collection(db, "events"), (snapshot) => {
       const eList: any[] = [];
       snapshot.forEach(doc => eList.push({ id: doc.id, ...doc.data() }));
       setEvents(eList);
     });
 
-    const unsubscribeCoordinators = onSnapshot(collection(db, "coordinators"), (snapshot) => {
-      const cList: any[] = [];
-      snapshot.forEach(doc => cList.push({ id: doc.id, ...doc.data() }));
-      useStore.setState({ coordinators: cList });
-    });
+    // Fetch real coordinators via API because it uses adminDb to query users collection
+    const fetchCoordinators = async () => {
+      try {
+        const response = await fetch('/api/coordinators');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.coordinators) {
+             useStore.setState({ coordinators: data.coordinators });
+          }
+        }
+      } catch (e) {
+        console.error("Failed to fetch coordinators", e);
+      }
+    };
+    fetchCoordinators();
 
     return () => {
       unsubscribeEvents();
-      unsubscribeCoordinators();
     };
   }, [setEvents]);
 
