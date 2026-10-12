@@ -22,6 +22,8 @@ import {
   Sparkles
 } from "lucide-react";
 import { useStore, Participant } from "@/lib/store";
+import * as XLSX from "xlsx";
+import toast from "react-hot-toast";
 
 const INITIAL_DEMO_PARTICIPANTS: Participant[] = [
   {
@@ -118,55 +120,117 @@ export default function ParticipantsPage() {
     return Array.from(new Set([...YEAR_OPTIONS, ...participantYears]));
   }, [allParticipants]);
 
-  // Handle CSV file upload
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle CSV and Excel file upload
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const text = event.target?.result as string;
-      if (!text) return;
+    try {
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data, { type: 'array' });
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet) as any[];
 
-      const lines = text.split(/\r?\n/).filter(line => line.trim() !== "");
-      if (lines.length < 2) return;
+      if (!jsonData || jsonData.length === 0) {
+        toast.error("The spreadsheet is empty.");
+        return;
+      }
 
-      const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, '').toLowerCase());
-      
-      const newParticipants: Participant[] = lines.slice(1).map((line, index) => {
-        const values = line.split(",").map(v => v.trim().replace(/^"|"$/g, '').trim());
-        const participant: any = {
-          id: `P-${Date.now()}-${index}`,
-          date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-          status: "Pending",
-          year: "3rd Year",
-          department: "General"
-        };
+      // Extract a clean default event name from the file name if not present in spreadsheet
+      // e.g. "embedded-systems-and-iot-prototyping-certificate" -> "Embedded Systems and IoT Prototyping"
+      const fallbackEventName = file.name
+        .replace(/\.[^/.]+$/, "")
+        .replace(/-certificate|-cert|-participants/gi, "")
+        .replace(/[-_]/g, " ")
+        .replace(/\b\w/g, c => c.toUpperCase())
+        .trim() || "Imported Event";
 
-        headers.forEach((header, colIdx) => {
-          if (values[colIdx]) {
-            if (header === 'name' || header === 'full name' || header === 'participant name') participant.name = values[colIdx];
-            if (header === 'email' || header === 'email address') participant.email = values[colIdx];
-            if (header === 'event' || header === 'event name') participant.event = values[colIdx];
-            if (header === 'year' || header === 'academic year' || header === 'class' || header === 'batch') participant.year = values[colIdx];
-            if (header === 'department' || header === 'dept') participant.department = values[colIdx];
-            if (header === 'reg no' || header === 'register number' || header === 'reg_no') participant.registerNumber = values[colIdx];
-            if (header === 'status') participant.status = values[colIdx];
+      const newParticipants: Participant[] = [];
+
+      jsonData.forEach((row, index) => {
+        let name = "";
+        let email = "";
+        let event = fallbackEventName;
+        let year = "3rd Year";
+        let department = "Engineering";
+        let registerNumber = "";
+
+        // Check each key case-insensitively
+        for (const [rawKey, rawVal] of Object.entries(row)) {
+          if (!rawVal) continue;
+          const k = rawKey.trim().toLowerCase();
+          const val = String(rawVal).replace(/^"|"$/g, '').trim();
+
+          // Match Student Name, Participant Name, Full Name, Name, Attendee
+          if (
+            k === 'student name' || 
+            k === 'student' || 
+            k === 'name' || 
+            k === 'full name' || 
+            k === 'participant name' || 
+            k === 'participant' || 
+            k === 'candidate name' ||
+            k === 'attendee' ||
+            k === 'attendee name'
+          ) {
+            name = val;
+          } 
+          // Match Email, Student Email, Email Address, Mail
+          else if (
+            k === 'email' || 
+            k === 'email address' || 
+            k === 'student email' || 
+            k === 'mail' || 
+            k === 'e-mail'
+          ) {
+            email = val;
           }
-        });
+          // Match Event
+          else if (k === 'event' || k === 'event name' || k === 'program' || k === 'workshop') {
+            event = val;
+          }
+          // Match Academic Year
+          else if (k === 'year' || k === 'academic year' || k === 'class' || k === 'batch') {
+            year = val;
+          }
+          // Match Department
+          else if (k === 'department' || k === 'dept' || k === 'branch' || k === 'major') {
+            department = val;
+          }
+          // Match Register Number
+          else if (k === 'reg no' || k === 'register number' || k === 'reg_no' || k === 'roll no' || k === 'id') {
+            registerNumber = val;
+          }
+        }
 
-        if (!participant.name) participant.name = "Participant " + (index + 1);
-        if (!participant.email) participant.email = `participant${index + 1}@example.com`;
-        if (!participant.event) participant.event = availableEvents[0] || "General Event";
-
-        return participant;
+        if (name && email) {
+          newParticipants.push({
+            id: `P-${Date.now()}-${index}`,
+            name,
+            email,
+            event,
+            year,
+            department,
+            registerNumber,
+            status: "Verified",
+            date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+          });
+        }
       });
 
+      if (newParticipants.length === 0) {
+        toast.error("No valid participants found. Please ensure your file has Name/Student Name and Email columns.");
+        return;
+      }
+
       addParticipants(newParticipants);
-    };
-    
-    reader.readAsText(file);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+      toast.success(`Successfully imported ${newParticipants.length} participants from ${file.name}!`);
+    } catch (err: any) {
+      console.error("File upload error:", err);
+      toast.error("Failed to parse spreadsheet: " + (err?.message || "Invalid file format"));
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   };
 
   const [newParticipant, setNewParticipant] = useState({
@@ -290,7 +354,7 @@ export default function ParticipantsPage() {
         type="file" 
         ref={fileInputRef} 
         onChange={handleFileUpload} 
-        accept=".csv" 
+        accept=".csv,.xlsx,.xls" 
         className="hidden" 
       />
 
@@ -321,7 +385,7 @@ export default function ParticipantsPage() {
             className="flex items-center gap-2 px-4 py-2.5 bg-card/60 hover:bg-muted/80 backdrop-blur-xl border border-border/40 rounded-xl text-sm font-semibold transition-all shadow-sm hover:scale-[1.02] active:scale-95"
           >
             <Upload className="w-4 h-4 text-accent" />
-            Import CSV
+            Import CSV / Excel
           </button>
           
           <button 

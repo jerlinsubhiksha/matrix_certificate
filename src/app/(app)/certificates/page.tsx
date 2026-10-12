@@ -27,6 +27,8 @@ import {
 import { useStore } from "@/lib/store";
 import Link from "next/link";
 import html2canvas from "html2canvas";
+import * as XLSX from "xlsx";
+import toast from "react-hot-toast";
 
 const FONT_OPTIONS = [
   { label: 'Playfair Display (Elegant)', value: "'Playfair Display', serif" },
@@ -96,36 +98,88 @@ export default function CertificatesPipelinePage() {
     }
   };
 
-  const handleCsvUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCsvUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const text = event.target?.result as string;
-      if (!text) return;
+    try {
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data, { type: 'array' });
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet) as any[];
 
-      const lines = text.split(/\r?\n/).filter(line => line.trim() !== "");
-      if (lines.length < 2) return; 
+      if (!jsonData || jsonData.length === 0) {
+        toast.error("The spreadsheet is empty.");
+        return;
+      }
 
-      const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, '').toLowerCase());
-      
-      const parsed = lines.slice(1).map((line, index) => {
-        const values = line.split(",").map(v => v.trim().replace(/^"|"$/g, '').trim());
-        const participant: any = { id: `P-${index}` };
-        headers.forEach((header, index) => {
-          if (header === 'name' || header === 'full name' || header === 'participant name') participant.name = values[index];
-          if (header === 'email' || header === 'email address') participant.email = values[index];
-          if (header === 'year' || header === 'academic year' || header === 'class' || header === 'batch') participant.year = values[index];
-          if (header === 'department' || header === 'dept') participant.department = values[index];
-          if (header === 'reg no' || header === 'register number' || header === 'reg_no') participant.registerNumber = values[index];
-        });
-        return participant;
-      }).filter(p => p.name && p.email);
+      const parsed: any[] = [];
+      jsonData.forEach((row, index) => {
+        let name = "";
+        let email = "";
+        let year = "";
+        let department = "";
+        let registerNumber = "";
+
+        for (const [rawKey, rawVal] of Object.entries(row)) {
+          if (!rawVal) continue;
+          const k = rawKey.trim().toLowerCase();
+          const val = String(rawVal).replace(/^"|"$/g, '').trim();
+
+          if (
+            k === 'student name' || 
+            k === 'student' || 
+            k === 'name' || 
+            k === 'full name' || 
+            k === 'participant name' || 
+            k === 'participant' || 
+            k === 'candidate name' ||
+            k === 'attendee' ||
+            k === 'attendee name'
+          ) {
+            name = val;
+          } else if (
+            k === 'email' || 
+            k === 'email address' || 
+            k === 'student email' || 
+            k === 'mail' || 
+            k === 'e-mail'
+          ) {
+            email = val;
+          } else if (k === 'year' || k === 'academic year' || k === 'class' || k === 'batch') {
+            year = val;
+          } else if (k === 'department' || k === 'dept' || k === 'branch' || k === 'major') {
+            department = val;
+          } else if (k === 'reg no' || k === 'register number' || k === 'reg_no' || k === 'roll no' || k === 'id') {
+            registerNumber = val;
+          }
+        }
+
+        if (name && email) {
+          parsed.push({
+            id: `P-${index}`,
+            name,
+            email,
+            year: year || "3rd Year",
+            department: department || "Engineering",
+            registerNumber,
+          });
+        }
+      });
+
+      if (parsed.length === 0) {
+        toast.error("No valid participants found. Please ensure columns include 'Name' (or 'Student Name') and 'Email'.");
+        return;
+      }
 
       setParticipants(parsed);
-    };
-    reader.readAsText(file);
+      toast.success(`Loaded ${parsed.length} participants from ${file.name}`);
+    } catch (err: any) {
+      console.error("Spreadsheet upload error:", err);
+      toast.error("Failed to parse file: " + (err?.message || "Invalid spreadsheet format"));
+    } finally {
+      if (csvInputRef.current) csvInputRef.current.value = "";
+    }
   };
 
   const updateParticipant = (index: number, field: string, value: string) => {
@@ -309,18 +363,24 @@ export default function CertificatesPipelinePage() {
                       participants.length > 0 ? 'border-blue-500/50 bg-blue-500/5' : 'border-border/60 hover:bg-muted/30 hover:border-foreground/30'
                     }`}
                   >
-                    <input type="file" accept=".csv" ref={csvInputRef} onChange={handleCsvUpload} className="hidden" />
+                    <input 
+                      type="file" 
+                      accept=".csv, .xlsx, .xls, text/csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" 
+                      ref={csvInputRef} 
+                      onChange={handleCsvUpload} 
+                      className="hidden" 
+                    />
                     {participants.length > 0 ? (
                       <>
                         <CheckCircle2 className="w-8 h-8 text-blue-500 mb-3" />
                         <p className="font-semibold text-foreground">{participants.length} Participants Loaded</p>
-                        <p className="text-xs text-muted-foreground mt-1">Click to replace CSV</p>
+                        <p className="text-xs text-muted-foreground mt-1">Click to replace spreadsheet</p>
                       </>
                     ) : (
                       <>
                         <FileSpreadsheet className="w-8 h-8 text-muted-foreground mb-3" />
-                        <p className="font-semibold text-foreground">Upload Participants CSV</p>
-                        <p className="text-xs text-muted-foreground mt-1">Must contain 'name' and 'email' columns</p>
+                        <p className="font-semibold text-foreground">Upload Participants</p>
+                        <p className="text-xs text-muted-foreground mt-1">CSV or Excel (.xlsx, .xls) with Name and Email</p>
                       </>
                     )}
                   </div>

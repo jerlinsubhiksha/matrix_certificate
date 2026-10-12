@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { motion, useMotionValue, useTransform, useSpring } from "framer-motion";
 
 interface Card3DProps {
@@ -13,9 +13,10 @@ interface Card3DProps {
 export function Card3D({ 
   children, 
   className = "", 
-  depth = 25,
-  maxRotate = 8 
+  depth = 15,
+  maxRotate = 6 
 }: Card3DProps) {
+  const [isHovered, setIsHovered] = useState(false);
   const x = useMotionValue(0);
   const y = useMotionValue(0);
 
@@ -26,6 +27,7 @@ export function Card3D({
   const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], [`-${maxRotate}deg`, `${maxRotate}deg`]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    setIsHovered(true);
     const rect = e.currentTarget.getBoundingClientRect();
     const xPct = (e.clientX - rect.left) / rect.width - 0.5;
     const yPct = (e.clientY - rect.top) / rect.height - 0.5;
@@ -34,6 +36,7 @@ export function Card3D({
   };
 
   const handleMouseLeave = () => {
+    setIsHovered(false);
     x.set(0);
     y.set(0);
   };
@@ -41,15 +44,24 @@ export function Card3D({
   return (
     <motion.div
       onMouseMove={handleMouseMove}
+      onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={handleMouseLeave}
       style={{
-        rotateX,
-        rotateY,
-        transformStyle: "preserve-3d",
+        rotateX: isHovered ? rotateX : 0,
+        rotateY: isHovered ? rotateY : 0,
+        transformStyle: isHovered ? "preserve-3d" : "flat",
+        backfaceVisibility: "hidden",
+        WebkitBackfaceVisibility: "hidden",
       }}
-      className={`perspective-[1000px] transition-shadow duration-300 ${className}`}
+      className={`transition-shadow duration-300 ${isHovered ? 'perspective-[1000px]' : ''} ${className}`}
     >
-      <div style={{ transform: `translateZ(${depth}px)`, transformStyle: "preserve-3d" }}>
+      <div 
+        style={{ 
+          transform: isHovered ? `translateZ(${depth}px)` : "none", 
+          transformStyle: isHovered ? "preserve-3d" : "flat",
+          backfaceVisibility: "hidden" 
+        }}
+      >
         {children}
       </div>
     </motion.div>

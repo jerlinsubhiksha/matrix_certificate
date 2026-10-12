@@ -251,21 +251,20 @@ export default function DashboardPage() {
 
 function StatCard({ title, value, icon: Icon, color, bg }: { title: string, value: string, icon: any, color: string, bg: string }) {
   return (
-    <Card3D maxRotate={9} depth={20} className="w-full">
-      <motion.div 
-        whileTap={{ scale: 0.98 }}
-        className="p-5 rounded-2xl bg-card/60 backdrop-blur-xl border border-border/50 flex flex-col gap-3 hover:border-accent/50 hover:shadow-2xl hover:shadow-accent/15 transition-all relative overflow-hidden card-shine group h-full"
-      >
-        <div className="flex items-center justify-between relative z-10" style={{ transform: "translateZ(12px)" }}>
-          <h3 className="text-xs font-semibold text-muted-foreground group-hover:text-foreground transition-colors">{title}</h3>
-          <div className={`w-8 h-8 rounded-xl ${bg} flex items-center justify-center ${color} group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-sm`}>
-            <Icon className="w-4 h-4" />
-          </div>
+    <motion.div 
+      whileHover={{ y: -4, transition: { duration: 0.2, ease: "easeOut" } }}
+      whileTap={{ scale: 0.98 }}
+      className="p-5 rounded-2xl bg-card border border-border/60 flex flex-col gap-3 hover:border-accent/40 hover:shadow-xl hover:shadow-accent/5 transition-all relative overflow-hidden card-shine group h-full shadow-sm w-full"
+    >
+      <div className="flex items-center justify-between relative z-10">
+        <h3 className="text-xs font-semibold text-muted-foreground group-hover:text-foreground transition-colors">{title}</h3>
+        <div className={`w-8 h-8 rounded-xl ${bg} flex items-center justify-center ${color} group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-sm`}>
+          <Icon className="w-4 h-4" />
         </div>
-        <span className="text-2xl font-black relative z-10 tracking-tight" style={{ transform: "translateZ(20px)" }}>{value}</span>
-        {/* Subtle glowing ambient aura */}
-        <div className={`absolute -bottom-6 -right-6 w-24 h-24 ${bg} rounded-full blur-2xl opacity-40 group-hover:opacity-90 transition-opacity duration-300`} />
-      </motion.div>
-    </Card3D>
+      </div>
+      <span className="text-2xl font-black text-foreground relative z-10 tracking-tight">{value}</span>
+      {/* Subtle glowing ambient aura */}
+      <div className={`absolute -bottom-6 -right-6 w-24 h-24 ${bg} rounded-full blur-2xl opacity-40 group-hover:opacity-80 transition-opacity duration-300 pointer-events-none`} />
+    </motion.div>
   );
 }
