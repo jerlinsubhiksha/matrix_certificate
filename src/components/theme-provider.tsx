@@ -1,0 +1,27 @@
+"use client";
+
+import * as React from "react";
+import { ThemeProvider as NextThemesProvider } from "next-themes";
+import { ThemeProviderProps } from "next-themes";
+
+import { Toaster } from "react-hot-toast";
+
+// Filter out the React 19 script tag warning for next-themes in dev mode
+if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
+  const orig = console.error;
+  console.error = (...args: unknown[]) => {
+    if (typeof args[0] === "string" && args[0].includes("Encountered a script tag")) {
+      return;
+    }
+    orig.apply(console, args);
+  };
+}
+
+export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
+  return (
+    <NextThemesProvider {...props}>
+      {children}
+      <Toaster position="top-right" />
+    </NextThemesProvider>
+  );
+}
