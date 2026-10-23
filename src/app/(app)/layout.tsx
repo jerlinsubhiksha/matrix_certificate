@@ -42,7 +42,7 @@ const SIDEBAR_NAV = [
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { settings, setEvents, setEmailJobs, events, user } = useStore();
-  const { role, userProfile, logout: contextLogout } = useAuth();
+  const { role, userProfile, currentUser, logout: contextLogout } = useAuth();
   const router = useRouter();
 
   const handleLogout = async () => {
@@ -387,11 +387,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
               <Link href="/profile" className="flex items-center gap-3 hover:opacity-85 transition-all duration-200 group active:scale-98">
                 <div className="w-9 h-9 rounded-full bg-gradient-to-br from-accent/20 to-accent/10 border border-accent/20 flex items-center justify-center text-accent shrink-0 overflow-hidden shadow-sm group-hover:border-accent/40 group-hover:scale-105 transition-all duration-300">
-                   <User className="w-4 h-4" />
+                   {(user?.photoURL || currentUser?.photoURL) ? (
+                     <img src={user?.photoURL || currentUser?.photoURL || ''} alt="Avatar" className="w-full h-full object-cover" />
+                   ) : (
+                     <User className="w-4 h-4" />
+                   )}
                 </div>
                 <div className="hidden lg:flex flex-col">
-                  <span className="text-sm font-semibold leading-none group-hover:text-accent transition-colors">{user?.displayName || userProfile?.name || 'User'}</span>
-                  <span className="text-xs text-muted-foreground capitalize">{user?.role || role || 'Role'}</span>
+                  <span className="text-sm font-semibold leading-none group-hover:text-accent transition-colors">{userProfile?.name || currentUser?.displayName || user?.displayName || currentUser?.email?.split('@')[0] || 'Admin'}</span>
+                  <span className="text-xs text-muted-foreground capitalize">{userProfile?.role || role || user?.role || 'Administrator'}</span>
                 </div>
               </Link>
             </div>

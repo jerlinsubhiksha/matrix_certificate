@@ -134,27 +134,19 @@ export const useStore = create<AppState>()(
       emailsSent: 0,
       emailJobs: [],
       settings: {
-        workspaceName: "Acme Corp Certification",
-        supportEmail: "support@acmecorp.com",
-        senderName: "Acme Certifications",
-        smtpHost: "smtp.mailgun.org",
+        workspaceName: "MATRIX Certificate System",
+        supportEmail: "matrix@karunya.edu.in",
+        senderName: "MATRIX Verification Desk",
+        smtpHost: "smtp.gmail.com",
         smtpPort: "587",
         requireTls: true,
-        twoFactorAuth: true,
+        twoFactorAuth: false,
         sessionTimeout: "30",
         emailAlerts: true,
         systemUpdates: true,
         logoUrl: "/logo.png"
       },
-      activityLogs: [
-        {
-          id: '1',
-          action: 'Logged in',
-          timestamp: new Date().toISOString(),
-          description: 'From IP 192.168.1.1 (Mac OS)',
-          userEmail: 'alice@matrix.com'
-        }
-      ],
+      activityLogs: [],
 
       setEvents: (events) => set({ events }),
       setEmailJobs: (jobs) => set({ emailJobs: jobs }),
